@@ -1,19 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
 
-// ✅ NO `use()` import anymore
-
 export default function RestaurantPage({ params }) {
-  // ✅ FIXED: Access slug directly, no `await` or `use()`
-  const slug = params.slug;
-
+  const { slug } = params;
   const [items, setItems] = useState([]);
   const [filter, setFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [restaurant, setRestaurant] = useState(null);
 
   useEffect(() => {
     if (!slug) return;
-
     const fetchData = async () => {
       const res = await fetch(`/api/restaurant/${slug}/menu`);
       const data = await res.json();
@@ -22,19 +18,31 @@ export default function RestaurantPage({ params }) {
         setRestaurant(data.restaurant);
       }
     };
-
     fetchData();
   }, [slug]);
 
-  const filteredItems =
-    filter === "all"
-      ? items
-      : items.filter((item) => item.category.toLowerCase() === filter);
+  const filteredItems = items.filter((item) => {
+    const matchesCategory = filter === "all" || item.category.toLowerCase() === filter;
+    const matchesSearch =
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.description.toLowerCase().includes(searchQuery.toLowerCase());
+
+    return matchesCategory && matchesSearch;
+  });
 
   return (
     <main className="max-w-4xl mx-auto p-6">
       <h1 className="text-3xl font-bold mb-2">{restaurant?.name}</h1>
       <p className="text-gray-500 mb-6">{restaurant?.address}</p>
+
+      {/* Search Input */}
+      <input
+        type="text"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        placeholder="Search menu items..."
+        className="w-full p-2 rounded border mb-6"
+      />
 
       {/* Category Filters */}
       <div className="flex gap-2 flex-wrap mb-6">
@@ -59,7 +67,7 @@ export default function RestaurantPage({ params }) {
           <div key={item._id} className="bg-white rounded-xl shadow p-4">
             {item.imageUrl && (
               <img
-                src={item.imageUrl || "/no-image.png"}
+                src={item.imageUrl}
                 alt={item.name}
                 className="w-full h-40 object-cover rounded mb-2"
               />
@@ -75,9 +83,7 @@ export default function RestaurantPage({ params }) {
       </div>
 
       {filteredItems.length === 0 && (
-        <p className="text-center text-gray-500 mt-8">
-          No items found for selected category.
-        </p>
+        <p className="text-center text-gray-500 mt-8">No items found.</p>
       )}
     </main>
   );
