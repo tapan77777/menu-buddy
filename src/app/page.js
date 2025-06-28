@@ -1,21 +1,17 @@
-'use client';
+// src/app/page.js or wherever this page is located
+export const revalidate = 60; // ISR — revalidate every 60 seconds
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
 
-export default function HomePage() {
-  const [restaurants, setRestaurants] = useState([]);
+export default async function HomePage() {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurant-list`);
+  const data = await res.json();
 
-  useEffect(() => {
-    async function fetchRestaurants() {
-      const res = await fetch('/api/restaurant-list');
-      const data = await res.json();
-      if (data.success) {
-        setRestaurants(data.restaurants);
-      }
-    }
-    fetchRestaurants();
-  }, []);
+  if (!data.success) {
+    return <p className="text-center mt-10">Failed to load restaurants</p>;
+  }
+
+  const restaurants = data.restaurants;
 
   return (
     <main className="p-6 bg-gray-50 min-h-screen">
@@ -28,11 +24,14 @@ export default function HomePage() {
             href={`/restaurant/${rest.slug}`}
             className="bg-white shadow rounded-2xl p-4 hover:shadow-lg transition"
           >
-            <img
-              src={rest.logoUrl}
-              alt={rest.name}
-              className="w-full h-40 object-cover rounded-xl mb-4"
-            />
+            {rest.logoUrl ? (
+  <img
+    src={rest.logoUrl}
+    alt={rest.name}
+    className="w-full h-40 object-cover rounded-xl mb-4"
+  />
+) : null}
+
             <h2 className="text-xl font-semibold">{rest.name}</h2>
             <p className="text-gray-600 text-sm">{rest.address}</p>
           </Link>
