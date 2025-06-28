@@ -15,7 +15,7 @@ export default async function HomePage() {
 
   return (
      <main className="p-4 sm:p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-2xl font-bold text-center mb-6">🍽️ Explore Restaurants</h1>
+      <h1 className="text-2xl font-bold text-center mb-6 text-black">🍽️ Explore Restaurants</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {restaurants.map((rest) => (
