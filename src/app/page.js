@@ -14,26 +14,31 @@ export default async function HomePage() {
   const restaurants = data.restaurants;
 
   return (
-    <main className="p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-3xl font-bold text-center mb-6">🍽️ Explore Restaurants</h1>
+     <main className="p-4 sm:p-6 bg-gray-50 min-h-screen">
+      <h1 className="text-2xl font-bold text-center mb-6">🍽️ Explore Restaurants</h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {restaurants.map((rest) => (
-          <Link
-            key={rest.slug}
-            href={`/restaurant/${rest.slug}`}
-            className="bg-white shadow rounded-2xl p-4 hover:shadow-lg transition"
-          >
-            {rest.logoUrl ? (
-  <img
-    src={rest.logoUrl}
-    alt={rest.name}
-    className="w-full h-40 object-cover rounded-xl mb-4"
-  />
-) : null}
-
-            <h2 className="text-xl font-semibold">{rest.name}</h2>
-            <p className="text-gray-600 text-sm">{rest.address}</p>
+          <Link key={rest.slug} href={`/restaurant/${rest.slug}`} className="block">
+            <div className="bg-white rounded-2xl shadow hover:shadow-lg transition overflow-hidden">
+              <img
+                src={rest.logoUrl || "/default-restaurant.jpg"}
+                alt={rest.name}
+                className="w-full h-40 object-cover"
+              />
+              <div className="p-4">
+                <h2 className="text-lg font-semibold">{rest.name}</h2>
+                <p className="text-gray-500 text-sm">{rest.address}</p>
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-green-600 text-sm font-medium bg-green-100 px-2 py-1 rounded-full">
+                    4.2 ★
+                  </span>
+                  <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                    Flat ₹50 OFF
+                  </span>
+                </div>
+              </div>
+            </div>
           </Link>
         ))}
       </div>
