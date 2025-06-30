@@ -5,6 +5,7 @@ import './globals.css';
 export const metadata = {
   title: 'Menu-buddy',
   description: 'Digital menu board for restaurants',
+  
 };
 
 export default function RootLayout({ children }) {

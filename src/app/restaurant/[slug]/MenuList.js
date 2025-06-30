@@ -14,6 +14,7 @@ function useDebounce(value, delay) {
   return debouncedValue;
 }
 
+
 export default function MenuList({ restaurant, items }) {
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');

@@ -1,6 +1,6 @@
 // src/app/page.js or wherever this page is located
 export const revalidate = 60; // ISR — revalidate every 60 seconds
-
+import PromotionalBanner from '@/components/PromotionalBanner';
 import Link from 'next/link';
 
 export default async function HomePage() {
@@ -12,12 +12,23 @@ export default async function HomePage() {
   }
 
   const restaurants = data.restaurants;
+  const promoData = {
+  title: "🎉 Flat ₹200 OFF",
+  description: "On top restaurants near you",
+  buttonText: "View Offers"
+};
 
   return (
+    
      <main className="p-4 sm:p-6 bg-gray-50 min-h-screen">
+      
+<PromotionalBanner promo={promoData}/>
+      
       <h1 className="text-2xl font-bold text-center mb-6 text-black">🍽️ Explore Restaurants</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+       
+
         {restaurants.map((rest) => (
           <Link key={rest.slug} href={`/restaurant/${rest.slug}`} className="block">
             <div className="bg-white rounded-2xl shadow hover:shadow-lg transition overflow-hidden">
