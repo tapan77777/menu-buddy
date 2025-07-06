@@ -15,6 +15,10 @@ export default function ScratchCardOffer() {
   const [showCelebrate, setShowCelebrate] = useState(false);
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
 
+//   const scratchAudioRef = useRef(null);
+const revealAudioRef = useRef(null);
+
+
   const startNewScratch = () => {
     const random = offers[Math.floor(Math.random() * offers.length)];
     setOffer(random);
@@ -43,14 +47,28 @@ export default function ScratchCardOffer() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     const handleMouseMove = (e) => {
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.beginPath();
-      ctx.arc(x, y, 20, 0, Math.PI * 2);
-      ctx.fill();
-    };
+  e.preventDefault();
+
+  const isTouch = e.type === 'touchmove';
+  const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+  const clientY = isTouch ? e.touches[0].clientY : e.clientY;
+
+  const rect = canvas.getBoundingClientRect();
+  const x = clientX - rect.left;
+  const y = clientY - rect.top;
+
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.beginPath();
+  ctx.arc(x, y, 20, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Play scratch sound
+//   if (scratchAudioRef.current && scratchAudioRef.current.paused) {
+//     scratchAudioRef.current.currentTime = 0;
+//     scratchAudioRef.current.play().catch(() => {});
+//   }
+};
+
 
     const checkRevealed = () => {
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -66,16 +84,28 @@ export default function ScratchCardOffer() {
         setTimeout(() => setShowConfetti(false), 4000);
         canvas.removeEventListener('mousemove', handleMouseMove);
       }
+      if (revealAudioRef.current) {
+  revealAudioRef.current.currentTime = 0;
+  revealAudioRef.current.play().catch(() => {});
+}
+
     };
 
-    canvas.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('mouseup', checkRevealed);
+   canvas.addEventListener('mousemove', handleMouseMove);
+canvas.addEventListener('touchmove', handleMouseMove); // 👈 for mobile
+canvas.addEventListener('mouseup', checkRevealed);
+canvas.addEventListener('touchend', checkRevealed); // 👈 for mobile
+
 
     return () => {
-      canvas.removeEventListener('mousemove', handleMouseMove);
-      canvas.removeEventListener('mouseup', checkRevealed);
+      canvas.addEventListener('mousemove', handleMouseMove);
+canvas.addEventListener('touchmove', handleMouseMove); // 👈 for mobile
+canvas.addEventListener('mouseup', checkRevealed);
+canvas.addEventListener('touchend', checkRevealed); // 👈 for mobile
+
     };
   }, [revealed, offer, showScratch]);
+  
 
   return (
     <>
@@ -154,20 +184,11 @@ export default function ScratchCardOffer() {
         
       )}
 
-      {/* 🎊 Celebration Emoji */}
-      {/* <AnimatePresence>
-        {showCelebrate && (
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="fixed top-20 left-1/2 -translate-x-1/2 bg-white px-6 py-3 rounded-full shadow-xl text-lg font-semibold z-50"
-          >
-            🥳 Woohoo! You unlocked <span className="text-green-600">{offer}</span>
-          </motion.div>
-        )}
-      </AnimatePresence> */}
+      {/* <audio ref={scratchAudioRef} src="/scratch.mp3" preload="auto" /> */}
+<audio ref={revealAudioRef} src="/celebrate.mp3" preload="auto" />
+
 
     </>
+
   );
 }
