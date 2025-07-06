@@ -38,7 +38,7 @@ export default async function HomePage() {
                 className="w-full h-40 object-cover"
               />
               <div className="p-4">
-                <h2 className="text-lg font-semibold">{rest.name}</h2>
+                <h2 className="text-lg font-semibold text-black">{rest.name}</h2>
                 <p className="text-gray-500 text-sm">{rest.address}</p>
                 <div className="mt-2 flex items-center justify-between">
                   <span className="text-green-600 text-sm font-medium bg-green-100 px-2 py-1 rounded-full">

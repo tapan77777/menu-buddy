@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from 'react';
 
+import dynamic from 'next/dynamic';
+const ScratchCardOffer = dynamic(() => import('@/components/ScratchCardOffer'), { ssr: false });
+
+ 
+
 // Debounce hook
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -64,6 +69,12 @@ const addToCart = (item) => {
         placeholder="Search menu items..."
         className="w-full p-2 rounded border mb-4 bg-black text-white"
       />
+      
+      {cartItems.length > 0 && (
+  <div className="mt-10">
+    <ScratchCardOffer />
+  </div>
+)}
 
       <div className="flex gap-2 flex-wrap">
         {['all', 'veg', 'non-veg', 'drinks'].map((cat) => (
@@ -122,6 +133,7 @@ const addToCart = (item) => {
       {filteredItems.length === 0 && (
         <p className="text-center text-gray-500 mt-8">No items found.</p>
       )}
+      
 
       {/* Popup Modal */}
       {selectedItem && (
@@ -158,6 +170,8 @@ const addToCart = (item) => {
           </div>
         </div>
       )}
+
+
 
       {/* Floating Cart Preview */}
      {cartItems.length > 0 && !selectedItem && (
