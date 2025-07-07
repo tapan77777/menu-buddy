@@ -14,6 +14,11 @@ const MenuItemSchema = new mongoose.Schema({
     enum: ["veg", "non-veg", "drinks"],
     required: true
   },
+  bestseller: {
+  type: Boolean,
+  default: false,
+},
+
   imageUrl: String
 }, { timestamps: true });
 

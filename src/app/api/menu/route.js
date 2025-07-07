@@ -9,7 +9,7 @@ export async function POST(req) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { name, description, price, category, imageUrl } = await req.json();
+    const { name, description, price, category, imageUrl,bestseller } = await req.json();
 
     await connectToDB();
 
@@ -19,6 +19,7 @@ export async function POST(req) {
       description,
       price,
       category,
+      bestseller,
       imageUrl
     });
 

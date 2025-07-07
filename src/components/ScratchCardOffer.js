@@ -135,9 +135,9 @@ canvas.addEventListener('touchend', checkRevealed); // 👈 for mobile
               ✖
             </button>
 
-            <h3 className="text-lg font-semibold mb-3 text-center">🎁 Scratch to Reveal Your Offer</h3>
+            <h3 className="text-lg font-semibold mb-3 text-center text-black">🎁 Scratch to Reveal Your Offer</h3>
 
-            <div className="relative w-[300px] h-[150px] bg-yellow-100 text-black text-2xl font-bold flex justify-center items-center rounded-lg shadow-lg overflow-hidden">
+            <div className="relative w-[300px] h-[150px] bg-yellow-400 text-black text-2xl font-bold flex justify-center items-center rounded-lg shadow-lg overflow-hidden">
               {revealed && <span className="z-10">{offer}</span>}
               {!revealed && (
                 <canvas

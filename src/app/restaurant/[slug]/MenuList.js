@@ -1,5 +1,6 @@
 'use client';
 
+import HomeIconButton from '@/components/HomeIconButton';
 import { useEffect, useState } from 'react';
 
 import dynamic from 'next/dynamic';
@@ -55,9 +56,12 @@ const addToCart = (item) => {
       item.description.toLowerCase().includes(debouncedSearch.toLowerCase());
     return matchesCategory && matchesSearch;
   });
-
+console.log(items);
   return (
+    <>
+    
     <main className="max-w-4xl mx-auto p-4 sm:p-6 pb-24">
+      <HomeIconButton />
       <h1 className="text-3xl font-bold mb-2">{restaurant?.name}</h1>
       <p className="text-gray-500 mb-6">{restaurant?.address}</p>
 
@@ -107,12 +111,18 @@ const addToCart = (item) => {
             />
             <div className="flex flex-col justify-between p-3 flex-grow">
               <div className="flex justify-between items-center">
-                <h2 className="text-base font-semibold text-gray-900">{item.name}</h2>
-                <span className="text-green-600 text-xs bg-green-100 px-2 py-0.5 rounded-full">
-                  ⭐ {item.rating || "4.2"}
-                </span>
-              </div>
-              <p className="text-red-500 text-xs mb-1">🔥 Bestseller</p>
+  <div>
+    <h2 className="text-base font-semibold text-gray-900">{item.name}</h2>
+    {item.bestseller && (
+      <p className="text-red-500 text-xs mt-0.5">🔥 Bestseller</p>
+    )}
+  </div>
+  <span className="text-green-600 text-xs bg-green-100 px-2 py-0.5 rounded-full">
+    ⭐ {item.rating || "4.2"}
+  </span>
+</div>
+
+              
               <div className="flex justify-between items-center mt-auto">
                 <span className="text-sm font-bold text-gray-800">₹{item.price}</span>
                 <button
@@ -153,7 +163,7 @@ const addToCart = (item) => {
                 className="w-full h-48 object-cover rounded-xl mb-4"
               />
             )}
-            <h2 className="text-xl font-bold mb-2">{selectedItem.name}</h2>
+            <h2 className="text-xl font-bold mb-2 text-black">{selectedItem.name}</h2>
             <p className="text-gray-600 mb-2">{selectedItem.description}</p>
             <p className="text-sm text-gray-500 mb-2">Category: {selectedItem.category}</p>
             <p className="text-green-700 font-bold text-lg mb-4">₹{selectedItem.price}</p>
@@ -219,5 +229,6 @@ const addToCart = (item) => {
 
 
     </main>
+    </>
   );
 }
