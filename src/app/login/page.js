@@ -8,11 +8,14 @@ export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    const form = e.target;
+    setLoading(true);
+    setError("");
 
+    const form = e.target;
     const email = form.email.value;
     const password = form.password.value;
 
@@ -30,52 +33,70 @@ export default function LoginPage() {
     } else {
       setError(data.error || "Login failed");
     }
+
+    setLoading(false);
   };
 
   return (
-    <main className="max-w-md mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">🔐 Admin Login</h1>
+    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 to-red-100 px-4 relative overflow-hidden">
+      {/* Background branding */}
+      <h1 className="absolute text-[6rem] md:text-[10rem] font-bold text-rose-200 opacity-10 select-none z-0 top-12 left-1/2 -translate-x-1/2">
+        MenuBuddy
+      </h1>
 
-      <form onSubmit={handleLogin} className="bg-white p-6 rounded-xl shadow">
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          required
-          className="input mb-4"
-        />
+      <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl z-10">
+        <h2 className="text-2xl font-bold text-center text-red-600 mb-6">
+          🔐 Admin Login
+        </h2>
 
-        <div className="relative mb-4">
+        <form onSubmit={handleLogin} className="space-y-5 text-black">
           <input
-            type={showPassword ? "text" : "password"}
-            name="password"
-            placeholder="Password"
+            type="email"
+            name="email"
+            placeholder="Email"
             required
-            className="input w-full pr-10"
+            className="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500"
           />
+
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              placeholder="Password"
+              required
+              className="w-full px-4 py-2 pr-10 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute top-1/2 right-3 transform -translate-y-1/2 text-sm text-gray-500 hover:text-red-500"
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
+
           <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute top-2 right-3 text-sm text-gray-600"
+            type="submit"
+            disabled={loading}
+            className="w-full bg-red-600 text-white py-2 rounded-md hover:bg-red-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {showPassword ? "Hide" : "Show"}
+            {loading ? "Logging in..." : "Login"}
           </button>
-        </div>
 
-        <button type="submit" className="bg-blue-600 text-white w-full py-2 rounded hover:bg-blue-700">
-          Login
-        </button>
+          {error && (
+            <p className="text-red-600 text-sm text-center -mt-2">{error}</p>
+          )}
+        </form>
 
-        {/* Error Message */}
-        {error && <p className="mt-3 text-red-600 text-sm">{error}</p>}
-
-        {/* Forgot Password Link */}
-        <div className="mt-4 text-center">
-          <Link href="/forgot-password" className="text-blue-600 hover:underline text-sm">
+        <div className="mt-5 text-center">
+          <Link
+            href="/forgot-password"
+            className="text-red-600 hover:underline text-sm"
+          >
             Forgot Password?
           </Link>
         </div>
-      </form>
+      </div>
     </main>
   );
 }

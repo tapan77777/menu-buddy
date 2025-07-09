@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from "react";
 
 export default function AdminDashboard() {
@@ -9,6 +10,10 @@ export default function AdminDashboard() {
   const [categoryFilter, setCategoryFilter] = useState("all");
 const [search, setSearch] = useState("");
 const [showAddForm, setShowAddForm] = useState(false);
+const [loading, setLoading] = useState(false);
+const [saving, setSaving] = useState(false);
+
+
 
 
 
@@ -59,8 +64,25 @@ const startEditing = (item) => {
     } else alert(data.error || "Delete failed");
   };
 
+  const handleLogout = () => {
+  localStorage.removeItem("adminToken"); // or your auth key
+  // optionally show a toast
+  window.location.href = "/login"; // redirect
+};
+
+
   return (
-    <main className="p-6 max-w-5xl mx-auto text-white">
+    <main className="p-6 max-w-5xl mx-auto text-white bg-gray-900">
+    <div className="">
+  <button
+    onClick={handleLogout}
+    className="bg-red-400 text-white text-sm px-1 py-1 rounded-md hover:bg-red-300 transition absolute top-8 right-0 flex items-center"
+  >
+    <i className="mr-1">🔓</i> 
+  </button>
+</div>
+
+
       <h1 className="text-3xl font-bold mb-1 text-center">
   🍽️ {restaurant?.name || "Your Restaurant"}
 </h1>
@@ -89,52 +111,64 @@ const startEditing = (item) => {
 
       {/* ⬇️ YOUR EXISTING FORM STARTS HERE */}
       <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          const form = e.target;
-          const imageFile = form.image.files[0];
+  onSubmit={async (e) => {
+    e.preventDefault();
+    setLoading(true); // Start loading
+    const form = e.target;
+    const imageFile = form.image.files[0];
 
-          const formData = new FormData();
-          formData.append("file", imageFile);
+    const formData = new FormData();
+    formData.append("file", imageFile);
 
-          const uploadRes = await fetch("/api/upload", {
-            method: "POST",
-            body: formData,
-          });
+    try {
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
 
-          const uploadData = await uploadRes.json();
-          if (!uploadData.success) {
-            alert("Image upload failed!");
-            return;
-          }
+      const uploadData = await uploadRes.json();
+      if (!uploadData.success) {
+        alert("Image upload failed!");
+        setLoading(false);
+        return;
+      }
 
-          const newItem = {
-            name: form.name.value,
-            description: form.description.value,
-            price: form.price.value,
-            category: form.category.value,
-            bestseller: form.bestseller.checked,
-            imageUrl: uploadData.url,
-          };
+      const newItem = {
+        name: form.name.value,
+        description: form.description.value,
+        price: form.price.value,
+        category: form.category.value,
+        bestseller: form.bestseller.checked,
+        imageUrl: uploadData.url,
+      };
 
-          const res = await fetch("/api/menu", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(newItem),
-          });
+      const res = await fetch("/api/menu", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(newItem),
+      });
 
-          const data = await res.json();
-          if (data.success) {
-            setItems([data.item, ...items]);
-            form.reset();
-            setShowAddForm(false); // ✅ close modal after add
-          } else alert(data.error || "Something went wrong");
-        }}
-        className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-      >
+      const data = await res.json();
+      if (data.success) {
+        setItems([data.item, ...items]);
+        form.reset();
+        setShowAddForm(false);
+      } else {
+        alert(data.error || "Something went wrong");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong!");
+    } finally {
+      setLoading(false); // Stop loading
+    }
+  }}
+  className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+>
+
         <input type="text" name="name" placeholder="Item Name" required className="input bg-white text-black p-2 rounded" />
         <input type="text" name="price" placeholder="Price" required className="input bg-white text-black p-2 rounded" />
         <select name="category" required className="input bg-white text-black p-2 rounded">
@@ -150,9 +184,15 @@ const startEditing = (item) => {
 
         <input type="file" name="image" accept="image/*" className="input" required />
         <textarea name="description" placeholder="Description" className="input bg-white text-black p-2 rounded col-span-1 sm:col-span-2" />
-        <button type="submit" className="col-span-1 sm:col-span-2 mt-4 bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white">
-          Add Item
-        </button>
+        <button
+  type="submit"
+  disabled={loading}
+  className="col-span-1 sm:col-span-2 mt-4 bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white disabled:opacity-60 disabled:cursor-not-allowed"
+>
+  {loading ? 'Adding...' : 'Add Item'}
+</button>
+
+
       </form>
     </div>
   </div>
@@ -164,6 +204,7 @@ const startEditing = (item) => {
   <form
     onSubmit={async (e) => {
       e.preventDefault();
+      setSaving(true); // <-- start saving
       const form = e.target;
 
       const updatedItem = {
@@ -187,6 +228,7 @@ const startEditing = (item) => {
 
         if (!uploadData.success) {
           alert("Image upload failed!");
+          setSaving(false); // stop saving
           return;
         }
 
@@ -211,48 +253,55 @@ const startEditing = (item) => {
       } else {
         alert(data.error || "Update failed");
       }
+
+      setSaving(false); // stop saving
     }}
-    className="bg-yellow-100 shadow rounded-xl p-4 mb-8"
+    className="bg-yellow-400 shadow rounded-xl p-4 mb-8"
   >
-    <h2 className="text-xl font-semibold mb-4">✏️ Edit Item</h2>
+    <h2 className="text-xl font-semibold mb-4 text-black">✏️ Edit Item</h2>
     <div className="bg-yellow-50 border-l-4 border-yellow-400 shadow p-4 rounded-xl grid grid-cols-1 sm:grid-cols-2 gap-4">
-  <input type="text" name="name" defaultValue={editingItem.name} required className="input" />
-  <input type="text" name="price" defaultValue={editingItem.price} required className="input" />
+      <input type="text" name="name" defaultValue={editingItem.name} required className="input" />
+      <input type="text" name="price" defaultValue={editingItem.price} required className="input" />
 
-  <select
-    name="category"
-    defaultValue={editingItem.category}
-    required
-    className="input bg-white text-black p-2 rounded"
-  >
-    <option value="">Select Category</option>
-    <option value="veg">🥗 Veg</option>
-    <option value="non-veg">🍗 Non-Veg</option>
-    <option value="drinks">🥤 Drinks</option>
-  </select>
+      <select
+        name="category"
+        defaultValue={editingItem.category}
+        required
+        className="input bg-white text-black p-2 rounded"
+      >
+        <option value="">Select Category</option>
+        <option value="veg">🥗 Veg</option>
+        <option value="non-veg">🍗 Non-Veg</option>
+        <option value="drinks">🥤 Drinks</option>
+      </select>
 
-  <input type="file" name="image" accept="image/*" className="input" />
-  
-  <label className="flex items-center gap-2 sm:col-span-2">
-    <input
-      type="checkbox"
-      name="bestseller"
-      defaultChecked={editingItem.bestseller}
-      className="form-checkbox"
-    />
-    <span className="text-sm">Bestseller 🔥</span>
-  </label>
+      <input type="file" name="image" accept="image/*" className="input" />
 
-  <textarea
-    name="description"
-    defaultValue={editingItem.description}
-    className="input col-span-1 sm:col-span-2"
-  />
-</div>
+      <label className="flex items-center gap-2 sm:col-span-2">
+        <input
+          type="checkbox"
+          name="bestseller"
+          defaultChecked={editingItem.bestseller}
+          className="form-checkbox h-4 w-4 text-green-600 transition duration-150 ease-in-out rounded-md border-gray-300 focus:ring-2 focus:ring-green-500"
+        />
+        <span className="text-sm text-black">Bestseller 🔥</span>
+      </label>
 
-    <button type="submit" className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-      Save Changes
+      <textarea
+        name="description"
+        defaultValue={editingItem.description}
+        className="input col-span-1 sm:col-span-2"
+      />
+    </div>
+
+    <button
+      type="submit"
+      disabled={saving}
+      className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+    >
+      {saving ? 'Saving...' : 'Save Changes'}
     </button>
+
     <button
       onClick={() => setEditingItem(null)}
       type="button"
@@ -262,6 +311,7 @@ const startEditing = (item) => {
     </button>
   </form>
 )}
+
 
 
 {/* 🔍 Search & Filter Section */}
@@ -331,23 +381,31 @@ const startEditing = (item) => {
       )}
         <p className="text-sm text-gray-600 mt-1 line-clamp-2">{item.description}</p>
         <p className="mt-2 font-bold text-green-700">₹{item.price}</p>
-        <div className="mt-3 flex justify-between items-center text-sm">
-          <span className="text-xs bg-gray-200 px-2 py-1 rounded">{item.category}</span>
-          <div className="flex gap-3">
-            <button
-              onClick={() => startEditing(item)}
-              className="text-blue-600 hover:text-blue-800 font-medium"
-            >
-              ✏️ Edit
-            </button>
-            <button
-              onClick={() => deleteItem(item._id)}
-              className="text-red-500 hover:text-red-700 font-medium"
-            >
-              🗑️ Delete
-            </button>
-          </div>
-        </div>
+        <div className="mt-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-sm">
+  {/* Category badge */}
+  <span className="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full capitalize shadow-sm border border-gray-300 w-max">
+    {item.category}
+  </span>
+
+  {/* Action buttons */}
+  <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
+    <button
+      onClick={() => startEditing(item)}
+      className="flex items-center gap-1 bg-blue-100 text-blue-700 hover:bg-blue-200 transition px-3 py-1 rounded-full text-sm font-medium"
+    >
+      ✏️ <span>Edit</span>
+    </button>
+
+    <button
+      onClick={() => deleteItem(item._id)}
+      className="flex items-center gap-1 bg-red-100 text-red-600 hover:bg-red-200 transition px-3 py-1 rounded-full text-sm font-medium"
+    >
+      🗑️ <span>Delete</span>
+    </button>
+  </div>
+</div>
+
+
       </div>
     </div>
   ))}

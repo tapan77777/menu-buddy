@@ -56,7 +56,7 @@ const addToCart = (item) => {
       item.description.toLowerCase().includes(debouncedSearch.toLowerCase());
     return matchesCategory && matchesSearch;
   });
-console.log(items);
+
   return (
     <>
     
