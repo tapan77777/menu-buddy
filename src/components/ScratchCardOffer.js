@@ -109,7 +109,7 @@ canvas.addEventListener('touchend', checkRevealed); // 👈 for mobile
 
   return (
     <>
-      {/* 🎁 Floating Gift Icon */}
+           {/* 🎁 Floating Gift Icon */}
       {!showScratch && (
         <div
           onClick={startNewScratch}
@@ -126,27 +126,29 @@ canvas.addEventListener('touchend', checkRevealed); // 👈 for mobile
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.3 }}
-            className="bg-white p-6 rounded-xl shadow-xl relative"
+            className="bg-gradient-to-br from-orange-500 to-red-500 p-6 rounded-3xl shadow-2xl relative w-[320px] h-[240px] flex flex-col justify-center items-center"
           >
             <button
               onClick={() => setShowScratch(false)}
-              className="absolute top-2 right-3 text-gray-400 hover:text-black text-xl"
+              className="absolute top-3 right-4 text-white hover:text-gray-200 text-2xl"
             >
               ✖
             </button>
 
-            <h3 className="text-lg font-semibold mb-3 text-center text-black">🎁 Scratch to Reveal Your Offer</h3>
+            <div className="text-white text-xl font-bold mb-3 text-center tracking-wide">
+              🎁 SCRATCH HERE
+            </div>
 
-            <div className="relative w-[300px] h-[150px] bg-yellow-400 text-black text-2xl font-bold flex justify-center items-center rounded-lg shadow-lg overflow-hidden">
-              {revealed && <span className="z-10">{offer}</span>}
+            <div className="relative w-full h-[120px] bg-white bg-opacity-10 text-2xl font-bold flex justify-center items-center rounded-xl shadow-inner overflow-hidden border border-white/30">
+              {revealed && <span className="z-10 text-black drop-shadow-lg">{offer}</span>}
               {!revealed && (
                 <canvas
                   ref={canvasRef}
-                  className="absolute top-0 left-0 w-full h-full cursor-pointer rounded-lg"
+                  className="absolute top-0 left-0 w-full h-full cursor-pointer rounded-xl"
                 />
               )}
               {revealed && (
-                <div className="absolute inset-0 rounded-lg animate-pulse bg-white/10 backdrop-blur" />
+                <div className="absolute inset-0 rounded-xl animate-pulse bg-white/10 backdrop-blur " />
               )}
             </div>
 
@@ -155,40 +157,46 @@ canvas.addEventListener('touchend', checkRevealed); // 👈 for mobile
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.3 }}
-                className="mt-4 text-center text-green-700 font-semibold text-sm"
+                className="mt-4 text-center text-white font-semibold text-sm"
               >
                 🎉 Use code{' '}
-                <span className="bg-green-100 px-2 py-1 rounded text-green-800">
+                <span className="bg-white/20 px-3 py-1 rounded text-yellow-200 tracking-wide">
                   GET{offer.replace(/\D/g, '')}
                 </span>{' '}
                 at checkout!
               </motion.div>
             )}
           </motion.div>
-          
-      {/* Sprinkle Confetti */}
-      {showConfetti && typeof window !== 'undefined' && (
-        <Confetti
-          numberOfPieces={150}
-          gravity={0.3}
-          initialVelocityY={15}
-          recycle={false}
-          run={true}
-          tweenDuration={1000}
-          width={windowSize.width}
-          height={windowSize.height}
-          origin={{ x: 0.5, y: 0 }}
-        />
-      )}
+
+          {/* Sprinkle Confetti */}
+          {showConfetti && typeof window !== 'undefined' && (
+            <Confetti
+              numberOfPieces={150}
+              gravity={0.3}
+              initialVelocityY={15}
+              recycle={false}
+              run={true}
+              tweenDuration={1000}
+              width={windowSize.width}
+              height={windowSize.height}
+              origin={{ x: 0.5, y: 0 }}
+            />
+          )}
         </div>
-        
       )}
 
       {/* <audio ref={scratchAudioRef} src="/scratch.mp3" preload="auto" /> */}
-<audio ref={revealAudioRef} src="/celebrate.mp3" preload="auto" />
+      <audio ref={revealAudioRef} src="/celebrate.mp3" preload="auto" />
 
 
     </>
 
   );
 }
+
+
+
+
+
+
+

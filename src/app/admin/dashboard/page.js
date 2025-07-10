@@ -1,6 +1,8 @@
 "use client";
-
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+
+
 
 export default function AdminDashboard() {
   const [items, setItems] = useState([]);
@@ -14,6 +16,18 @@ const [loading, setLoading] = useState(false);
 const [saving, setSaving] = useState(false);
 
 
+  const router = useRouter();
+ // To prevent flicker
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      router.replace("/admin/login"); // redirect if no token
+    } else {
+      setLoading(false); // allow page to load
+    }
+  }, )
 
 
 
@@ -29,6 +43,7 @@ const startEditing = (item) => {
       setToken(storedToken);
       fetchMenuItems(storedToken);
     }
+    
   }, []);
 
   const fetchMenuItems = async (token) => {
@@ -65,7 +80,7 @@ const startEditing = (item) => {
   };
 
   const handleLogout = () => {
-  localStorage.removeItem("adminToken"); // or your auth key
+   // or your auth key
   // optionally show a toast
   window.location.href = "/login"; // redirect
 };

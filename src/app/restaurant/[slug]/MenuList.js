@@ -60,7 +60,7 @@ const addToCart = (item) => {
   return (
     <>
     
-    <main className="max-w-4xl mx-auto p-4 sm:p-6 pb-24">
+    <main className="max-w-4xl mx-auto p-4 sm:p-6 pb-24 ">
       <HomeIconButton />
       <h1 className="text-3xl font-bold mb-2">{restaurant?.name}</h1>
       <p className="text-gray-500 mb-6">{restaurant?.address}</p>
@@ -76,7 +76,7 @@ const addToCart = (item) => {
       
       {cartItems.length > 0 && (
   <div className="mt-10">
-    <ScratchCardOffer />
+    {/* <ScratchCardOffer /> */}
   </div>
 )}
 
@@ -98,47 +98,57 @@ const addToCart = (item) => {
 
       {/* Menu Items */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-        {filteredItems.map((item) => (
-          <div
-            key={item._id}
-            className="flex bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition cursor-pointer"
-            onClick={() => setSelectedItem(item)}
-          >
-            <img
-              src={item.imageUrl}
-              alt={item.name}
-              className="w-24 h-24 sm:w-32 sm:h-32 object-cover"
-            />
-            <div className="flex flex-col justify-between p-3 flex-grow">
-              <div className="flex justify-between items-center">
-  <div>
-    <h2 className="text-base font-semibold text-gray-900">{item.name}</h2>
-    {item.bestseller && (
-      <p className="text-red-500 text-xs mt-0.5">🔥 Bestseller</p>
-    )}
-  </div>
-  <span className="text-green-600 text-xs bg-green-100 px-2 py-0.5 rounded-full">
-    ⭐ {item.rating || "4.2"}
-  </span>
+  {filteredItems.map((item) => (
+    <div
+      key={item._id}
+      className="relative overflow-hidden rounded-xl shadow-md border bg-white transition hover:shadow-xl cursor-pointer"
+      onClick={() => setSelectedItem(item)}
+    >
+      {/* ✨ Glowing background animation */}
+      <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300 opacity-10 animate-background z-0" />
+
+      <div className="relative z-10 flex">
+        <img
+          src={item.imageUrl}
+          alt={item.name}
+          className="w-24 h-24 sm:w-32 sm:h-32 object-cover"
+        />
+        <div className="flex flex-col justify-between p-3 flex-grow">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-base font-semibold text-gray-900">
+                {item.name}
+              </h2>
+              {item.bestseller && (
+                <p className="text-red-500 text-xs mt-0.5">🔥 Bestseller</p>
+              )}
+            </div>
+            <span className="text-green-600 text-xs bg-green-100 px-2 py-0.5 rounded-full">
+              ⭐ {item.rating || "4.2"}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-center mt-auto">
+            <span className="text-sm font-bold text-gray-800">
+              ₹{item.price}
+            </span>
+            <button
+              className="text-green-600 border border-green-600 px-3 py-0.5 rounded-full text-xs hover:bg-green-50"
+              onClick={(e) => {
+                e.stopPropagation();
+                addToCart(item);
+              }}
+            >
+              ADD
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  ))}
 </div>
 
-              
-              <div className="flex justify-between items-center mt-auto">
-                <span className="text-sm font-bold text-gray-800">₹{item.price}</span>
-                <button
-                  className="text-green-600 border border-green-600 px-3 py-0.5 rounded-full text-xs hover:bg-green-50"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    addToCart(item);
-                  }}
-                >
-                  ADD
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+
 
       {filteredItems.length === 0 && (
         <p className="text-center text-gray-500 mt-8">No items found.</p>

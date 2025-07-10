@@ -22,6 +22,7 @@ export default async function HomePage() {
     
      <main className="p-4 sm:p-6 bg-gray-50 min-h-screen">
       
+      
 <PromotionalBanner promo={promoData}/>
       
       <h1 className="text-2xl font-bold text-center mb-6 text-black">🍽️ Explore Restaurants</h1>
