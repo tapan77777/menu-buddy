@@ -3,6 +3,27 @@ export const revalidate = 60; // ISR — revalidate every 60 seconds
 import PromotionalBanner from '@/components/PromotionalBanner';
 import Link from 'next/link';
 
+
+export async function generateMetadata() {
+  return {
+    title: "MenuBuddy - Explore QR Menus Near You",
+    description: "Discover top-rated restaurants and view digital menus instantly with MenuBuddy.",
+    keywords: ["digital menu", "QR menu", "restaurant menus", "menubuddy", "order online"],
+    openGraph: {
+      title: "MenuBuddy - Smart QR Menus",
+      description: "Explore digital menus with QR, promotions, and more.",
+      url: "https://menubuddy.co.in",
+      siteName: "MenuBuddy",
+      type: "website"
+    },
+    alternates: {
+  canonical: "https://menubuddy.co.in"
+}
+
+  };
+}
+
+
 export default async function HomePage() {
   const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurant-list`);
   const data = await res.json();

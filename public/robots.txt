@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://menubuddy.co.in/sitemap.xml

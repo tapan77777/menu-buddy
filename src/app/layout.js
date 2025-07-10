@@ -12,6 +12,8 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <Head>
+        <link rel="canonical" href="https://menubuddy.co.in/" />
+
         {/* ✅ Google Tag Manager Code */}
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-QSYL461LLW"></script>
         <script
