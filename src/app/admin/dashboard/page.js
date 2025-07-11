@@ -191,6 +191,9 @@ const startEditing = (item) => {
           <option value="veg">🥗 Veg</option>
           <option value="non-veg">🍗 Non-Veg</option>
           <option value="drinks">🥤 Drinks</option>
+          <option value="special">Special</option>
+        <option value="combo">Combo</option>
+        <option value="staters">Staters</option>
         </select>
         <label className="flex items-center gap-2 mt-2">
   <input type="checkbox" name="bestseller" className="form-checkbox" />
@@ -288,6 +291,9 @@ const startEditing = (item) => {
         <option value="veg">🥗 Veg</option>
         <option value="non-veg">🍗 Non-Veg</option>
         <option value="drinks">🥤 Drinks</option>
+        <option value="special">Special</option>
+        <option value="combo">Combo</option>
+        <option value="staters">Staters</option>
       </select>
 
       <input type="file" name="image" accept="image/*" className="input" />
@@ -342,12 +348,12 @@ const startEditing = (item) => {
     />
 
     {/* Category Filter Buttons */}
-    <div className="flex flex-wrap gap-2 mt-2 sm:mt-0">
-      {["all", "veg", "non-veg", "drinks"].map((cat) => (
+    <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
+      {["all", "veg", "non-veg", "drinks","special","combo","staters"].map((cat) => (
         <button
           key={cat}
           onClick={() => setCategoryFilter(cat)}
-          className={`px-4 py-1.5 rounded-full transition ${
+          className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap  ${
             categoryFilter === cat
               ? "bg-green-600 text-white"
               : "bg-gray-300 text-gray-800"

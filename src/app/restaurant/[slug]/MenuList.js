@@ -105,21 +105,22 @@ const addToCart = (item) => {
   </div>
 )}
 
-      <div className="flex gap-2 flex-wrap">
-        {['all', 'veg', 'non-veg', 'drinks'].map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setFilter(cat)}
-            className={`px-4 py-2 rounded-full transition ${
-              filter === cat
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-200 text-gray-800'
-            }`}
-          >
-            {cat.charAt(0).toUpperCase() + cat.slice(1)}
-          </button>
-        ))}
-      </div>
+      <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
+  {['all', 'veg', 'non-veg', 'drinks', 'special', 'desserts', 'combo', 'starters'].map((cat) => (
+    <button
+      key={cat}
+      onClick={() => setFilter(cat)}
+      className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
+        filter === cat
+          ? 'bg-green-600 text-white'
+          : 'bg-gray-100 text-gray-800'
+      }`}
+    >
+      {cat.charAt(0).toUpperCase() + cat.slice(1)}
+    </button>
+  ))}
+</div>
+
 
       {/* Menu Items */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
