@@ -192,7 +192,6 @@ const startEditing = (item) => {
           <option value="non-veg">🍗 Non-Veg</option>
           <option value="drinks">🥤 Drinks</option>
           <option value="special">Special</option>
-        <option value="combo">Combo</option>
         <option value="starters">Staters</option>
         </select>
         <label className="flex items-center gap-2 mt-2">
@@ -292,7 +291,6 @@ const startEditing = (item) => {
         <option value="non-veg">🍗 Non-Veg</option>
         <option value="drinks">🥤 Drinks</option>
         <option value="special">Special</option>
-        <option value="combo">Combo</option>
         <option value="starters">Staters</option>
       </select>
 
@@ -349,7 +347,7 @@ const startEditing = (item) => {
 
     {/* Category Filter Buttons */}
     <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-      {["all", "veg", "non-veg", "drinks","special","combo","starters"].map((cat) => (
+      {["all", "veg", "non-veg", "drinks","special","starters"].map((cat) => (
         <button
           key={cat}
           onClick={() => setCategoryFilter(cat)}

@@ -106,7 +106,7 @@ const addToCart = (item) => {
 )}
 
       <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-  {['all', 'veg', 'non-veg', 'drinks', 'special','combo', 'starters'].map((cat) => (
+  {['all', 'veg', 'non-veg', 'drinks', 'special','starters'].map((cat) => (
     <button
       key={cat}
       onClick={() => setFilter(cat)}

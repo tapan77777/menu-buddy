@@ -11,7 +11,7 @@ const MenuItemSchema = new mongoose.Schema({
   price: Number,
   category: {
     type: String,
-    enum: ["veg", "non-veg", "drinks","special","dessert","combo","starters"],
+    enum: ["veg", "non-veg", "drinks","special","starters"],
     required: true
   },
   bestseller: {
