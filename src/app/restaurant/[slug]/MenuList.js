@@ -60,10 +60,34 @@ const addToCart = (item) => {
   return (
     <>
     
-    <main className="max-w-4xl mx-auto p-4 sm:p-6 pb-24 ">
+    <main className="max-w-4xl mx-auto px-4 pt-10 pb-24">
+
+{/* Top Restaurant Banner Section */}
+<div className="relative mb-12">
+  {/* Banner Image */}
+  <img
+    src={restaurant?.logoUrl || '/default-restaurant.jpg'}
+    alt="Restaurant Banner"
+    className="w-full h-40 object-cover rounded-b-xl"
+  />
+
+  {/* Circular Logo + Name */}
+  <div className="absolute -bottom-10 left- flex items-center gap-4">
+    <img
+      src={restaurant?.logoUrl || '/default-restaurant.jpg'}
+      alt="Restaurant Logo"
+      className="w-20 h-20 rounded-full border-4 border-white shadow-md"
+    />
+    <div className="bg-black/50 p-2 rounded-xl">
+  <h1 className="text-xl sm:text-2xl font-bold text-white">{restaurant?.name}</h1>
+  <p className="text-sm sm:text-base text-white">{restaurant?.address}</p>
+</div>
+  </div>
+</div>
+
+
       <HomeIconButton />
-      <h1 className="text-3xl font-bold mb-2">{restaurant?.name}</h1>
-      <p className="text-gray-500 mb-6">{restaurant?.address}</p>
+      
 
       {/* Search & Filters */}
       <input
@@ -72,6 +96,7 @@ const addToCart = (item) => {
         onChange={(e) => setSearchQuery(e.target.value)}
         placeholder="Search menu items..."
         className="w-full p-2 rounded border mb-4 bg-black text-white"
+        
       />
       
       {cartItems.length > 0 && (
@@ -100,51 +125,45 @@ const addToCart = (item) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
   {filteredItems.map((item) => (
     <div
-      key={item._id}
-      className="relative overflow-hidden rounded-xl shadow-md border bg-white transition hover:shadow-xl cursor-pointer"
-      onClick={() => setSelectedItem(item)}
-    >
-      {/* ✨ Glowing background animation */}
-      <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300 opacity-10 animate-background z-0" />
-
-      <div className="relative z-10 flex">
-        <img
-          src={item.imageUrl}
-          alt={item.name}
-          className="w-24 h-24 sm:w-32 sm:h-32 object-cover"
-        />
-        <div className="flex flex-col justify-between p-3 flex-grow">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-base font-semibold text-gray-900">
-                {item.name}
-              </h2>
-              {item.bestseller && (
-                <p className="text-red-500 text-xs mt-0.5">🔥 Bestseller</p>
-              )}
-            </div>
-            <span className="text-green-600 text-xs bg-green-100 px-2 py-0.5 rounded-full">
-              ⭐ {item.rating || "4.2"}
-            </span>
-          </div>
-
-          <div className="flex justify-between items-center mt-auto">
-            <span className="text-sm font-bold text-gray-800">
-              ₹{item.price}
-            </span>
-            <button
-              className="text-green-600 border border-green-600 px-3 py-0.5 rounded-full text-xs hover:bg-green-50"
-              onClick={(e) => {
-                e.stopPropagation();
-                addToCart(item);
-              }}
-            >
-              ADD
-            </button>
-          </div>
+  key={item._id}
+  className="relative overflow-hidden rounded-2xl bg-white border border-gray-200 shadow-lg active:scale-[0.98] transition-transform duration-200"
+  onClick={() => setSelectedItem(item)}
+>
+  <div className="flex">
+    <img
+      src={item.imageUrl}
+      alt={item.name}
+      className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-l-2xl"
+    />
+    <div className="flex flex-col justify-between p-3 flex-grow">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-base font-semibold text-gray-900">{item.name}</h2>
+          {item.bestseller && (
+            <p className="text-red-500 text-xs mt-0.5">🔥 Bestseller</p>
+          )}
         </div>
+        <span className="text-green-600 text-xs bg-green-100 px-2 py-0.5 rounded-full">
+          ⭐ {item.rating || "4.2"}
+        </span>
+      </div>
+
+      <div className="flex justify-between items-center mt-auto">
+        <span className="text-sm font-bold text-gray-800">₹{item.price}</span>
+        <button
+          className="text-green-600 border border-green-600 px-3 py-0.5 rounded-full text-xs active:bg-green-100"
+          onClick={(e) => {
+            e.stopPropagation();
+            addToCart(item);
+          }}
+        >
+          ADD
+        </button>
       </div>
     </div>
+  </div>
+</div>
+
   ))}
 </div>
 
@@ -157,39 +176,59 @@ const addToCart = (item) => {
 
       {/* Popup Modal */}
       {selectedItem && (
-        <div
-          className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-end justify-center"
-          onClick={() => setSelectedItem(null)}
-        >
-          <div
-            className="bg-white w-full max-w-md rounded-t-3xl p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="w-16 h-1 bg-gray-300 mx-auto mb-4 rounded" />
-            {selectedItem.imageUrl && (
-              <img
-                src={selectedItem.imageUrl}
-                alt={selectedItem.name}
-                className="w-full h-48 object-cover rounded-xl mb-4"
-              />
-            )}
-            <h2 className="text-xl font-bold mb-2 text-black">{selectedItem.name}</h2>
-            <p className="text-gray-600 mb-2">{selectedItem.description}</p>
-            <p className="text-sm text-gray-500 mb-2">Category: {selectedItem.category}</p>
-            <p className="text-green-700 font-bold text-lg mb-4">₹{selectedItem.price}</p>
+  <div
+    className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center sm:items-center"
+    onClick={() => setSelectedItem(null)}
+  >
+    <div
+      className="bg-white w-full sm:w-[90%] max-w-md rounded-t-3xl sm:rounded-2xl p-4 sm:p-6 relative overflow-y-auto max-h-[90vh]"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Close Button */}
+      <button
+        className="absolute top-3 right-4 text-gray-400 hover:text-black text-2xl"
+        onClick={() => setSelectedItem(null)}
+      >
+        &times;
+      </button>
 
-            <button
-              className="w-full bg-green-600 text-white py-2 rounded-xl hover:bg-green-700 transition"
-              onClick={() => {
-                addToCart(selectedItem);
-                setSelectedItem(null);
-              }}
-            >
-              Add to Cart
-            </button>
-          </div>
-        </div>
+      {/* Image */}
+      {selectedItem.imageUrl && (
+        <img
+          src={selectedItem.imageUrl}
+          alt={selectedItem.name}
+          className="w-full h-48 object-cover rounded-xl mb-4"
+        />
       )}
+
+      {/* Info */}
+      <h2 className="text-2xl font-bold mb-1 text-gray-900">{selectedItem.name}</h2>
+
+      {selectedItem.bestseller && (
+        <p className="text-red-500 text-sm mb-1">🔥 Bestseller</p>
+      )}
+
+      <p className="text-gray-600 mb-3">{selectedItem.description}</p>
+      <p className="text-sm text-gray-500 mb-2">Category: {selectedItem.category}</p>
+
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-green-700 font-bold text-xl">₹{selectedItem.price}</span>
+        <span className="text-sm text-yellow-500">⭐ {selectedItem.rating || '4.2'}</span>
+      </div>
+
+      <button
+        className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold text-lg hover:bg-green-700 transition"
+        onClick={() => {
+          addToCart(selectedItem);
+          setSelectedItem(null);
+        }}
+      >
+        Add to Cart
+      </button>
+    </div>
+  </div>
+)}
+
 
 
 
@@ -208,32 +247,49 @@ const addToCart = (item) => {
     </div>
 
     {/* Slide-up Cart Popup */}
-    {showCart && (
-      <div
-        className="fixed inset-0 bg-black bg-opacity-40 flex items-end justify-center z-50"
+   {showCart && (
+  <div
+    className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center sm:items-center"
+    onClick={() => setShowCart(false)}
+  >
+    <div
+      className="bg-white w-full sm:w-[90%] max-w-md rounded-t-3xl sm:rounded-2xl p-6 relative overflow-y-auto max-h-[90vh]"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Close button */}
+      <button
+        className="absolute top-3 right-4 text-gray-400 hover:text-black text-2xl"
         onClick={() => setShowCart(false)}
       >
-        <div
-          className="bg-white w-full max-w-md rounded-t-3xl p-6"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="w-16 h-1 bg-gray-300 mx-auto mb-4 rounded" />
-          <h2 className="text-xl font-bold mb-4 text-black">🛒 Your Cart</h2>
+        &times;
+      </button>
+
+      {/* Cart Title */}
+      <h2 className="text-2xl font-bold mb-4 text-gray-900">🛒 Your Cart</h2>
+
+      {cartItems.length > 0 ? (
+        <>
           {cartItems.map((item) => (
             <div key={item._id} className="flex justify-between items-center mb-3 text-black">
               <span>{item.name}</span>
               <span className="font-bold">₹{item.price}</span>
             </div>
           ))}
+
           <button
             onClick={() => setCartItems([])}
-            className="mt-4 w-full bg-red-500 text-white py-2 rounded-lg"
+            className="mt-6 w-full bg-red-500 text-white py-2 rounded-xl font-semibold hover:bg-red-600 transition"
           >
             Clear Cart
           </button>
-        </div>
-      </div>
-    )}
+        </>
+      ) : (
+        <p className="text-center text-gray-500">Your cart is empty.</p>
+      )}
+    </div>
+  </div>
+)}
+
   </>
 )}
 
