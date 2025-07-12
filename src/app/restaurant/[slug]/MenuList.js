@@ -26,6 +26,8 @@ export default function MenuList({ restaurant, items }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
   const [cartItems, setCartItems] = useState([]);
+  const [showImagePreview, setShowImagePreview] = useState(false);
+
 
   const debouncedSearch = useDebounce(searchQuery, 300);
 
@@ -56,6 +58,8 @@ const addToCart = (item) => {
       item.description.toLowerCase().includes(debouncedSearch.toLowerCase());
     return matchesCategory && matchesSearch;
   });
+const totalCount = items.length;
+
 
   return (
     <>
@@ -104,6 +108,11 @@ const addToCart = (item) => {
     {/* <ScratchCardOffer /> */}
   </div>
 )}
+<h2 className="text-lg font-bold text-gray-800 mb-2">
+    Total Items in Menu: {totalCount}
+</h2>
+
+
 
       <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
   {['all', 'veg', 'non-veg', 'drinks', 'special','starters'].map((cat) => (
@@ -196,10 +205,12 @@ const addToCart = (item) => {
       {/* Image */}
       {selectedItem.imageUrl && (
         <img
-          src={selectedItem.imageUrl}
-          alt={selectedItem.name}
-          className="w-full h-48 object-cover rounded-xl mb-4"
-        />
+  src={selectedItem.imageUrl}
+  alt={selectedItem.name}
+  className="w-full h-48 object-cover rounded-xl mb-4 cursor-pointer"
+  onClick={() => setShowImagePreview(true)}
+/>
+
       )}
 
       {/* Info */}
@@ -230,6 +241,18 @@ const addToCart = (item) => {
   </div>
 )}
 
+{showImagePreview && (
+  <div
+    className="fixed inset-0 bg-black bg-opacity-90 z-[60] flex items-center justify-center transition-opacity duration-300 animate-fadeIn"
+    onClick={() => setShowImagePreview(false)}
+  >
+    <img
+      src={selectedItem.imageUrl}
+      alt="Full View"
+      className="max-w-full max-h-full object-contain animate-scaleIn"
+    />
+  </div>
+)}
 
 
 

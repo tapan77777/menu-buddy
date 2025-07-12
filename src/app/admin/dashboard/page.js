@@ -82,20 +82,27 @@ const startEditing = (item) => {
   const handleLogout = () => {
    // or your auth key
   // optionally show a toast
-  window.location.href = "/login"; // redirect
+  const confirmed = window.confirm("Are you sure you want to logout?");
+  if (confirmed) {
+      window.location.href = "/login";
+    }
+   // redirect
 };
 
+const totalCount = items.length;
 
   return (
     <main className="p-6 max-w-5xl mx-auto text-white bg-gray-900">
-    <div className="">
+    <div className="absolute top-6 right-3 z-50">
   <button
     onClick={handleLogout}
-    className="bg-red-400 text-white text-sm px-1 py-1 rounded-md hover:bg-red-300 transition absolute top-8 right-0 flex items-center"
+
+    className="bg-red-500 text-white text-xs px-2 py-1 rounded-md shadow hover:bg-red-400 transition flex items-center gap-1"
   >
-    <i className="mr-1">🔓</i> 
+    out
   </button>
 </div>
+
 
 
       <h1 className="text-3xl font-bold mb-1 text-center">
@@ -110,6 +117,9 @@ const startEditing = (item) => {
 >
   ➕ Add Item
 </button>
+<h2 className="text-lg font-bold text-gray-800 mb-2">
+  🧾 Total Items in Menu: {totalCount}
+</h2>
 
 
       {/* ADD ITEM FORM */}
@@ -369,67 +379,78 @@ const startEditing = (item) => {
 
 
 
-      {/* EXISTING ITEMS LIST */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+     {/* EXISTING ITEMS LIST */}
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
   {items
-  .filter((item) => {
-    const matchesCategory =
-      categoryFilter === "all" ||
-      item.category?.toLowerCase() === categoryFilter;
+    .filter((item) => {
+      const matchesCategory =
+        categoryFilter === "all" ||
+        item.category?.toLowerCase() === categoryFilter;
+      const matchesSearch = item.name
+        .toLowerCase()
+        .includes(search.toLowerCase());
+      return matchesCategory && matchesSearch;
+    })
+    .map((item) => (
+      <div
+        key={item._id}
+        className="flex flex-col bg-white text-black rounded-xl shadow hover:shadow-xl transition overflow-hidden h-full"
+      >
+        {item.imageUrl && (
+          <div className="w-full h-40 overflow-hidden">
+            <img
+              src={item.imageUrl}
+              alt={item.name}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
+        <div className="p-4 flex flex-col flex-grow">
+          <h2 className="text-lg font-semibold text-gray-900 truncate">
+            {item.name}
+          </h2>
+          {item.bestseller && (
+            <p className="text-red-500 text-xs mt-1">🔥 Bestseller</p>
+          )}
+          <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+            {item.description}
+          </p>
+          <p className="mt-2 font-bold text-green-700">₹{item.price}</p>
 
-    const matchesSearch = item.name
-      .toLowerCase()
-      .includes(search.toLowerCase());
+          <div className="mt-auto flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-sm">
+            {/* Category badge */}
+            <span className="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full capitalize shadow-sm border border-gray-300 w-max">
+              {item.category}
+            </span>
 
-    return matchesCategory && matchesSearch;
-  })
-  .map((item) => (
+            {/* Action buttons */}
+            <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
+              <button
+                onClick={() => {
+                  startEditing(item);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="flex items-center gap-1 bg-blue-100 text-blue-700 hover:bg-blue-200 transition px-3 py-1 rounded-full text-sm font-medium"
+              >
+                ✏️ <span>Edit</span>
+              </button>
 
-    <div key={item._id} className="bg-white text-black rounded-xl shadow hover:shadow-xl transition overflow-hidden">
-      {item.imageUrl && (
-        <img
-          src={item.imageUrl}
-          alt={item.name}
-          className="w-full h-40 object-cover"
-        />
-      )}
-      <div className="p-4">
-        <h2 className="text-lg font-semibold">{item.name}</h2>
-        {item.bestseller && (
-        <p className="text-red-500 text-xs mt-1">🔥 Bestseller</p>
-      )}
-        <p className="text-sm text-gray-600 mt-1 line-clamp-2">{item.description}</p>
-        <p className="mt-2 font-bold text-green-700">₹{item.price}</p>
-        <div className="mt-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-sm">
-  {/* Category badge */}
-  <span className="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full capitalize shadow-sm border border-gray-300 w-max">
-    {item.category}
-  </span>
-
-  {/* Action buttons */}
-  <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
-    <button
-      onClick={() => startEditing(item)}
-      className="flex items-center gap-1 bg-blue-100 text-blue-700 hover:bg-blue-200 transition px-3 py-1 rounded-full text-sm font-medium"
-    >
-      ✏️ <span>Edit</span>
-    </button>
-
-    <button
-      onClick={() => deleteItem(item._id)}
-      className="flex items-center gap-1 bg-red-100 text-red-600 hover:bg-red-200 transition px-3 py-1 rounded-full text-sm font-medium"
-    >
-      🗑️ <span>Delete</span>
-    </button>
-  </div>
-</div>
-
-
+              <button
+                onClick={() => {
+                  if (window.confirm(`Are you sure you want to delete "${item.name}"?`)) {
+                    deleteItem(item._id);
+                  }
+                }}
+                className="flex items-center gap-1 bg-red-100 text-red-600 hover:bg-red-200 transition px-3 py-1 rounded-full text-sm font-medium"
+              >
+                🗑️ <span>Delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-  ))}
+    ))}
 </div>
-
     </main>
   );
 }

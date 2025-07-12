@@ -4,6 +4,7 @@ import PromotionalBanner from '@/components/PromotionalBanner';
 import Link from 'next/link';
 
 
+
 export async function generateMetadata() {
   return {
     title: "MenuBuddy - Explore QR Menus Near You",
@@ -40,6 +41,15 @@ export default async function HomePage() {
 };
 
   return (
+    <>
+    {/* HEADER */}
+      <header className="bg-gradient-to-r from-red-800 via-red-600 to-red-400 shadow-md">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <h1 className="text-xl sm:text-2xl font-bold text-white">MenuBuddy</h1>
+        </div>
+      </header>
+    
+
     
      <main className="p-4 sm:p-6 bg-gray-50 min-h-screen">
       
@@ -76,5 +86,6 @@ export default async function HomePage() {
         ))}
       </div>
     </main>
+    </>
   );
 }
