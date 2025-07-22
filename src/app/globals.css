@@ -97,36 +97,160 @@ body {
 
 /* promotional banner */
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-@keyframes float-slow {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
-}
-@keyframes ping-slow {
-  0% {
-    transform: scale(1);
-    opacity: 0.6;
-  }
-  75%, 100% {
-    transform: scale(2);
-    opacity: 0;
-  }
-}
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
-.animate-float-slow {
-  animation: float-slow 5s ease-in-out infinite;
-}
-.animate-ping-slow {
-  animation: ping-slow 6s cubic-bezier(0, 0, 0.2, 1) infinite;
-}
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-10px) rotate(5deg); }
+        }
+        
+        @keyframes float-delayed {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-15px) rotate(-5deg); }
+        }
+        
+        @keyframes bounce-slow {
+          0%, 100% { transform: translateY(0px) scale(1); }
+          50% { transform: translateY(-5px) scale(1.05); }
+        }
+        
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        
+        .animate-float {
+          animation: float 3s ease-in-out infinite;
+        }
+        
+        .animate-float-delayed {
+          animation: float-delayed 3s ease-in-out infinite;
+        }
+        
+        .animate-bounce-slow {
+          animation: bounce-slow 2s ease-in-out infinite;
+        }
+        
+        .animate-spin-slow {
+          animation: spin-slow 8s linear infinite;
+        }
+        
+        .animate-shimmer {
+          animation: shimmer 3s ease-in-out infinite;
+        }
+        
+        /* Hide scrollbar */
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+
+
+
+
+
+        /* animation */
+
+
+        .hand-animation-container {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+          z-index: 1000;
+        }
+
+        .hand-pointer {
+          position: absolute;
+          opacity: 0;
+          transform: scale(0.8);
+          transition: all 0.3s ease;
+          filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+        }
+
+        .hand-pointer.active {
+          opacity: 1;
+          transform: scale(1);
+        }
+
+        .promo-reveal-container {
+          transform: translateY(-20px);
+          opacity: 0;
+          transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .promo-reveal-container.revealed {
+          transform: translateY(0);
+          opacity: 1;
+        }
+
+        .restaurant-card {
+          transform: translateY(30px);
+          opacity: 0;
+          transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .restaurant-card.revealed {
+          transform: translateY(0);
+          opacity: 1;
+        }
+
+        .pull-gesture {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .pull-gesture::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+          transition: left 0.8s ease;
+        }
+
+        .pull-gesture.pulling::before {
+          left: 100%;
+        }
+
+        @keyframes handPull {
+          0% { transform: translateX(-20px) translateY(-10px) rotate(-5deg); }
+          50% { transform: translateX(20px) translateY(5px) rotate(5deg); }
+          100% { transform: translateX(-20px) translateY(-10px) rotate(-5deg); }
+        }
+
+        .hand-pulling {
+          animation: handPull 1.5s ease-in-out;
+        }
+
+        @media (max-width: 768px) {
+          .hand-pointer {
+            width: 35px;
+            height: 35px;
+          }
+        }
+
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fadeInUp {
+          animation: fadeInUp 0.6s ease forwards;
+        }
