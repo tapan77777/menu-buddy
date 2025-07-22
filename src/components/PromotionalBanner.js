@@ -125,7 +125,7 @@ function Demo() {
       
       {/* Demo content below */}
       <div className="p-4">
-        <h3 className="text-lg font-semibold mb-3">What's on your mind?</h3>
+        <h3 className="text-lg font-semibold mb-3">Whats on your mind?</h3>
         <div className="grid grid-cols-4 gap-3 mb-6">
           {['🍕', '🍔', '🍜', '🥗', '🍰', '☕', '🌮', '🍱'].map((emoji, i) => (
             <div key={i} className="bg-white rounded-lg p-4 text-center shadow-sm">

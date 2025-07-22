@@ -176,7 +176,7 @@ function Demo() {
           <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
             <h3 className="font-semibold mb-2">Search Results:</h3>
             <p className="text-sm text-gray-600">
-              Query: "{searchResults.query}" in {searchResults.location}
+              Query: {searchResults.query} in {searchResults.location}
             </p>
           </div>
         )}
