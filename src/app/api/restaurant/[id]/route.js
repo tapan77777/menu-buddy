@@ -1,5 +1,5 @@
 import connectToDB from "@/lib/db";
-import Restaurant from "@/models/restaurant";
+import Restaurant from "@/models/resturant";
 
 export async function PUT(request, { params }) {
   try {
