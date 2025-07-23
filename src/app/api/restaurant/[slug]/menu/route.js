@@ -1,24 +1,31 @@
 import { connectToDB } from "@/lib/db";
+import MenuItem from "@/models/menuItem";
 import Restaurant from "@/models/resturant";
 
-
-export async function GET() {
+export async function GET(_, context) {
   try {
-    await connectToDB();
-   const restaurants = await Restaurant.find({});
-    return Response.json(restaurants);
-  } catch (error) {
-    return Response.json({ error: "Server Error" }, { status: 500 });
-  }
-}
+    const { slug } = context.params;
 
-export async function POST(request) {
-  try {
     await connectToDB();
-    const body = await request.json();
-    const restaurant = await Restaurant.create(body);
-    return Response.json(restaurant);
+
+    const restaurant = await Restaurant.findOne({ slug });
+    if (!restaurant) {
+      return Response.json({ error: "Restaurant not found" }, { status: 404 });
+    }
+
+    const items = await MenuItem.find({ restaurantId: restaurant._id });
+
+    return Response.json({
+      success: true,
+      restaurant: {
+        name: restaurant.name,
+        address: restaurant.address,
+        logoUrl: restaurant.logoUrl,
+      },
+      items,
+    });
   } catch (error) {
+    console.error(error);
     return Response.json({ error: "Server Error" }, { status: 500 });
   }
 }
