@@ -1,4 +1,4 @@
-'use client'
+"use client";
 import {
     Edit3,
     Eye,
@@ -12,53 +12,47 @@ import {
     Users,
     X
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const OwnerDashboard = () => {
-  const [restaurants, setRestaurants] = useState([
-    {
-      id: 1,
-      name: "Pizza Palace",
-      logo: "🍕",
-      address: "123 Main St, Delhi",
-      visits: 245,
-      dateAdded: "2024-01-15"
-    },
-    {
-      id: 2,
-      name: "Burger Haven",
-      logo: "🍔",
-      address: "456 Food Court, CP",
-      visits: 189,
-      dateAdded: "2024-02-10"
-    },
-    {
-      id: 3,
-      name: "Sushi Zen",
-      logo: "🍣",
-      address: "789 Japan St, Vasant Kunj",
-      visits: 312,
-      dateAdded: "2024-01-20"
-    },
-    {
-      id: 4,
-      name: "Curry Corner",
-      logo: "🍛",
-      address: "321 Spice Lane, Karol Bagh",
-      visits: 156,
-      dateAdded: "2024-03-05"
-    }
-  ]);
-
+  const [restaurants, setRestaurants] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [newRestaurant, setNewRestaurant] = useState({
     name: '',
-    logo: '',
-    address: ''
+    logoUrl: '',
+    address: '',
+    email: '',
+    slug: ''
   });
+
+  useEffect(() => {
+    fetchRestaurants();
+  }, []);
+
+  const fetchRestaurants = async () => {
+    try {
+      const response = await fetch('/api/restaurant');
+      const data = await response.json();
+      setRestaurants(data.map(restaurant => ({
+        id: restaurant._id,
+        name: restaurant.name,
+        logo: restaurant.logoUrl || '🍽️',
+        address: restaurant.address,
+        email: restaurant.email,
+        slug: restaurant.slug,
+        visits: restaurant.visits || 0,
+        dateAdded: restaurant.createdAt
+      })));
+    } catch (error) {
+      console.error('Error fetching restaurants:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const totalVisits = restaurants.reduce((sum, restaurant) => sum + restaurant.visits, 0);
   const averageVisits = Math.round(totalVisits / restaurants.length) || 0;
@@ -72,19 +66,24 @@ const OwnerDashboard = () => {
     setEditingId(restaurant.id);
     setEditForm({
       name: restaurant.name,
-      logo: restaurant.logo,
+      logoUrl: restaurant.logo,
       address: restaurant.address
     });
   };
 
-  const saveEdit = () => {
-    setRestaurants(restaurants.map(restaurant =>
-      restaurant.id === editingId
-        ? { ...restaurant, ...editForm }
-        : restaurant
-    ));
-    setEditingId(null);
-    setEditForm({});
+  const saveEdit = async () => {
+    try {
+      await fetch(`/api/restaurant/${editingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm)
+      });
+      fetchRestaurants();
+      setEditingId(null);
+      setEditForm({});
+    } catch (error) {
+      console.error('Error updating restaurant:', error);
+    }
   };
 
   const cancelEdit = () => {
@@ -92,31 +91,42 @@ const OwnerDashboard = () => {
     setEditForm({});
   };
 
-  const deleteRestaurant = (id) => {
+  const deleteRestaurant = async (id) => {
     if (confirm('Are you sure you want to delete this restaurant?')) {
-      setRestaurants(restaurants.filter(restaurant => restaurant.id !== id));
+      try {
+        await fetch(`/api/restaurant/${id}`, { method: 'DELETE' });
+        fetchRestaurants();
+      } catch (error) {
+        console.error('Error deleting restaurant:', error);
+      }
     }
   };
 
-  const addRestaurant = () => {
-    if (!newRestaurant.name || !newRestaurant.address) {
+  const addRestaurant = async () => {
+    if (!newRestaurant.name || !newRestaurant.address || !newRestaurant.email) {
       alert('Please fill in all required fields');
       return;
     }
 
-    const restaurant = {
-      id: Math.max(...restaurants.map(r => r.id)) + 1,
-      name: newRestaurant.name,
-      logo: newRestaurant.logo || '🍽️',
-      address: newRestaurant.address,
-      visits: 0,
-      dateAdded: new Date().toISOString().split('T')[0]
-    };
-
-    setRestaurants([...restaurants, restaurant]);
-    setNewRestaurant({ name: '', logo: '', address: '' });
-    setShowAddForm(false);
+    try {
+      await fetch('/api/restaurant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newRestaurant)
+      });
+      fetchRestaurants();
+      setNewRestaurant({ name: '', logoUrl: '', address: '', email: '', slug: '' });
+      setShowAddForm(false);
+    } catch (error) {
+      console.error('Error adding restaurant:', error);
+    }
   };
+
+  if (loading) {
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-xl">Loading...</div>
+    </div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -179,7 +189,9 @@ const OwnerDashboard = () => {
                 <Eye className="h-6 w-6 text-orange-600" />
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-semibold text-gray-900">{Math.max(...restaurants.map(r => r.visits))}</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {restaurants.length > 0 ? Math.max(...restaurants.map(r => r.visits)) : 0}
+                </h3>
                 <p className="text-gray-600 text-sm">Top Restaurant Visits</p>
               </div>
             </div>
@@ -216,7 +228,7 @@ const OwnerDashboard = () => {
           <div className="bg-white rounded-lg shadow-sm border mb-6">
             <div className="p-6">
               <h3 className="text-lg font-semibold mb-4">Add New Restaurant</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Restaurant Name *</label>
                   <input
@@ -228,16 +240,36 @@ const OwnerDashboard = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Logo (Emoji or Text)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
                   <input
-                    type="text"
-                    value={newRestaurant.logo}
-                    onChange={(e) => setNewRestaurant({...newRestaurant, logo: e.target.value})}
+                    type="email"
+                    value={newRestaurant.email}
+                    onChange={(e) => setNewRestaurant({...newRestaurant, email: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="🍽️"
+                    placeholder="restaurant@email.com"
                   />
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Slug *</label>
+                  <input
+                    type="text"
+                    value={newRestaurant.slug}
+                    onChange={(e) => setNewRestaurant({...newRestaurant, slug: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="restaurant-slug"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Logo URL</label>
+                  <input
+                    type="text"
+                    value={newRestaurant.logoUrl}
+                    onChange={(e) => setNewRestaurant({...newRestaurant, logoUrl: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="https://logo-url.com"
+                  />
+                </div>
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Address *</label>
                   <input
                     type="text"
@@ -259,7 +291,7 @@ const OwnerDashboard = () => {
                 <button
                   onClick={() => {
                     setShowAddForm(false);
-                    setNewRestaurant({ name: '', logo: '', address: '' });
+                    setNewRestaurant({ name: '', logoUrl: '', address: '', email: '', slug: '' });
                   }}
                   className="flex items-center gap-2 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
                 >
@@ -294,10 +326,10 @@ const OwnerDashboard = () => {
                           <div className="flex items-center gap-3">
                             <input
                               type="text"
-                              value={editForm.logo}
-                              onChange={(e) => setEditForm({...editForm, logo: e.target.value})}
-                              className="w-12 px-2 py-1 border border-gray-300 rounded text-center"
-                              placeholder="🍽️"
+                              value={editForm.logoUrl}
+                              onChange={(e) => setEditForm({...editForm, logoUrl: e.target.value})}
+                              className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
+                              placeholder="Logo URL"
                             />
                             <input
                               type="text"
@@ -308,9 +340,15 @@ const OwnerDashboard = () => {
                           </div>
                         ) : (
                           <div className="flex items-center gap-3">
-                            <span className="text-2xl">{restaurant.logo}</span>
+                            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                              {restaurant.logo.startsWith('http') ? 
+                                <img src={restaurant.logo} alt="Logo" className="w-8 h-8 rounded" /> :
+                                <span className="text-lg">{restaurant.logo}</span>
+                              }
+                            </div>
                             <div>
                               <div className="font-semibold">{restaurant.name}</div>
+                              <div className="text-xs text-gray-500">{restaurant.email}</div>
                             </div>
                           </div>
                         )}
@@ -402,7 +440,12 @@ const OwnerDashboard = () => {
                 <div key={restaurant.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3">
                     <div className="text-lg font-bold text-gray-400">#{index + 1}</div>
-                    <span className="text-xl">{restaurant.logo}</span>
+                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                      {restaurant.logo.startsWith('http') ? 
+                        <img src={restaurant.logo} alt="Logo" className="w-8 h-8 rounded" /> :
+                        <span className="text-lg">{restaurant.logo}</span>
+                      }
+                    </div>
                     <div>
                       <div className="font-semibold">{restaurant.name}</div>
                       <div className="text-sm text-gray-600">{restaurant.address}</div>
