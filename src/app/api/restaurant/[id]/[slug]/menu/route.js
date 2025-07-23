@@ -1,4 +1,4 @@
-import connectToDB from "@/lib/db";
+import { connectToDB } from "@/lib/db";
 import MenuItem from "@/models/menuItem";
 import Restaurant from "@/models/resturant";
 

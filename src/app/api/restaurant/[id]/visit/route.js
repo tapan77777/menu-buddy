@@ -1,4 +1,4 @@
-import connectToDB from "@/lib/db";
+import { connectToDB } from "@/lib/db";
 import Restaurant from "@/models/resturant";
 
 export async function POST(request, { params }) {
