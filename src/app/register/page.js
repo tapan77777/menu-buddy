@@ -1,4 +1,5 @@
 "use client";
+import HomeIconButton from "@/components/HomeIconButton";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -51,7 +52,7 @@ export default function RegisterPage() {
   alt="Logo"
   className="h-8 w-auto object-contain inline-flex items-center justify-center w-16 h-16  rounded-full mb-4"
 />
-
+<HomeIconButton/>
           
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Join Our Platform</h1>
           <p className="text-gray-600">Register your restaurant and start reaching more customers</p>

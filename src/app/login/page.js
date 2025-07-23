@@ -1,5 +1,6 @@
 "use client";
 
+import HomeIconButton from "@/components/HomeIconButton";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -43,6 +44,7 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 to-red-100 px-4 relative overflow-hidden">
       {/* Background branding */}
+      <HomeIconButton/>
       <h1 className="absolute text-[6rem] md:text-[10rem] font-bold text-rose-200 opacity-10 select-none z-0 top-12 left-1/2 -translate-x-1/2">
         MenuBuddy
       </h1>
@@ -92,12 +94,19 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-5 text-center">
-          <Link
+          {/* <Link
             href="/forgot-password"
             className="text-red-600 hover:underline text-sm"
           >
             Forgot Password?
+          </Link> */}
+          <Link
+            href="/register"
+            className="text-red-600 hover:underline text-sm"
+          >
+            Register
           </Link>
+          
         </div>
       </div>
     </main>

@@ -33,20 +33,22 @@ export default function PromotionalBanner({ promo }) {
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-baseline gap-1 mb-1">
-                <span className="text-xs text-gray-600 uppercase tracking-wide">GET</span>
+                <span className="text-xs text-gray-600 uppercase tracking-wide">Discover</span>
               </div>
               <div className="text-3xl font-black text-gray-900 leading-none mb-1">
-                60%<span className="text-lg"> OFF</span>
+                 Menus Instantly 🍽️  
+<span className="text-lg"> </span>
               </div>
               <div className="text-xs text-gray-500">
-                USE CODE: <span className="font-bold text-orange-600">WELCOMEBACK</span>
+                Browse restaurant: <span className="font-bold text-orange-600"> menus near you — fast, simple, and in real-time.
+</span>
               </div>
             </div>
             
             {/* Food illustration area */}
             <div className="flex-shrink-0 text-right">
               <div className="text-4xl mb-1">🥟</div>
-              <button className="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-orange-600 transition-colors">
+              <button className="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-orange-600 transition-colors " href='restaurantGrid'>
                 {promo?.buttonText || 'Order Now'}
               </button>
             </div>
@@ -61,15 +63,21 @@ export default function PromotionalBanner({ promo }) {
           
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {[
-              { name: "Pizza Palace", offer: "Buy 1 Get 1", time: "25 mins", discount: "50%" },
-              { name: "Burger King", offer: "Free Delivery", time: "20 mins", discount: "₹100 OFF" },
-              { name: "Chai Corner", offer: "Combo Deal", time: "15 mins", discount: "40%" },
-              { name: "Biryani House", offer: "Weekend Special", time: "30 mins", discount: "₹150 OFF" },
-              { name: "Dosa Point", offer: "South Special", time: "18 mins", discount: "35%" }
+              { name: "Pizza Palace", offer: "🕒 Open till 11 PM", time: "25 mins", discount: "50%",image: "/default-restaurant.jpg"},
+              { name: "Burger King", offer: "Free Delivery", time: "20 mins", discount: "₹100 OFF",image: "/default-restaurant.jpg" },
+              { name: "Chai Corner", offer: "Combo Deal", time: "15 mins", discount: "40%" ,image: "/default-restaurant.jpg"},
+              { name: "Biryani House", offer: "Weekend Special", time: "30 mins", discount: "₹150 OFF",image: "/default-restaurant.jpg" },
+              { name: "Dosa Point", offer: "South Special", time: "18 mins", discount: "35%",image: "/default-restaurant.jpg" }
             ].map((restaurant, i) => (
               <div key={i} className="flex-shrink-0 w-36 bg-white/90 backdrop-blur-sm rounded-xl p-3 border border-white/20">
-                <div className="w-full h-16 bg-gradient-to-br from-orange-200 to-red-200 rounded-lg mb-2 flex items-center justify-center text-lg">
-                  🍽️
+                <div className="w-full h-16 rounded-lg mb-2 overflow-hidden">
+                  <img 
+          src={restaurant.image}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            e.target.src = '/default-restaurant.jpg'; // Fallback
+          }}
+        />
                 </div>
                 <h4 className="font-semibold text-xs text-gray-800 mb-1 truncate">{restaurant.name}</h4>
                 <p className="text-xs text-gray-600 mb-1">{restaurant.offer}</p>
@@ -93,7 +101,7 @@ export default function PromotionalBanner({ promo }) {
             <span>Powered by PANCHAYAT</span>
           </div>
           <div className="text-xs text-green-200">
-            500+ Restaurants • ⭐ 4.3
+            50+ Restaurants • ⭐ 4.3
           </div>
         </div>
       </div>
@@ -108,52 +116,5 @@ export default function PromotionalBanner({ promo }) {
         }
       `}</style>
     </section>
-  );
-}
-
-// Demo component
-function Demo() {
-  const samplePromo = {
-    title: "Panchayat Food",
-    description: "Order from 500+ restaurants with exclusive deals",
-    buttonText: "Explore"
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-100 p-2">
-      <PromotionalBanner promo={samplePromo} />
-      
-      {/* Demo content below */}
-      <div className="p-4">
-        <h3 className="text-lg font-semibold mb-3">Whats on your mind?</h3>
-        <div className="grid grid-cols-4 gap-3 mb-6">
-          {['🍕', '🍔', '🍜', '🥗', '🍰', '☕', '🌮', '🍱'].map((emoji, i) => (
-            <div key={i} className="bg-white rounded-lg p-4 text-center shadow-sm">
-              <div className="text-2xl mb-1">{emoji}</div>
-            </div>
-          ))}
-        </div>
-        
-        <h3 className="text-lg font-semibold mb-3">Restaurants near you</h3>
-        <div className="space-y-3">
-          {[1, 2, 3].map((_, i) => (
-            <div key={i} className="bg-white rounded-lg shadow-sm p-3 flex gap-3">
-              <div className="w-20 h-20 bg-gray-200 rounded-lg flex-shrink-0"></div>
-              <div className="flex-1">
-                <h4 className="font-medium text-sm mb-1">Restaurant Name</h4>
-                <p className="text-xs text-gray-500 mb-1">North Indian, Chinese</p>
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <span>⭐ 4.2</span>
-                  <span>•</span>
-                  <span>25-30 mins</span>
-                  <span>•</span>
-                  <span>₹200 for two</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
   );
 }
