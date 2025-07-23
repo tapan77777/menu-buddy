@@ -2,12 +2,7 @@ import { connectToDB } from "@/lib/db";
 import MenuItem from "@/models/menuItem";
 import Restaurant from "@/models/resturant";
 
-useEffect(() => {
-  // Track visit when menu page loads
-  if (restaurantId) {
-    fetch(`/api/restaurants/${restaurantId}/visit`, { method: 'POST' });
-  }
-}, [restaurantId]);
+
 
 export async function GET(_, context) {
   try {
