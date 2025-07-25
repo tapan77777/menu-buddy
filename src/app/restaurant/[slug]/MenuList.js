@@ -45,6 +45,10 @@ const addToCart = (item) => {
     return [...prev, item];
   });
 };
+//discount calculate
+ const calculateDiscount = (current, original) => {
+    return Math.round(((current-original) / original) * 100);
+  };
 
 
   const removeFromCart = (id) => {
@@ -139,6 +143,14 @@ const totalCount = items.length;
   className="relative overflow-hidden rounded-2xl bg-white border border-gray-200 shadow-lg active:scale-[0.98] transition-transform duration-200"
   onClick={() => setSelectedItem(item)}
 >
+  {/* Discounted badge */}
+
+              <div className="absolute top-3 left-3 z-20">
+                <div className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-2 py-1 rounded-lg text-xs font-bold shadow-lg">
+                  {calculateDiscount(item.price+50, item.price)}% OFF
+                </div>
+              </div>
+
   <div className="flex">
     <img
       src={item.imageUrl}
@@ -159,16 +171,39 @@ const totalCount = items.length;
       </div>
 
       <div className="flex justify-between items-center mt-auto">
-        <span className="text-sm font-bold text-gray-800">₹{item.price}</span>
+        {/* <span className="text-sm font-bold text-gray-800">₹{item.price}</span> */}
+        <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                        ₹{item.price}
+                      </span>
+                    
+                        <span className="text-sm text-gray-400 line-through">
+                          ₹{item.price+50}
+                        </span>
+                      
+                    </div>
+                   
+                      <span className="text-xs text-green-600 font-medium">
+                        You save ₹50
+                      </span>
+                    
+                  </div>
         <button
-          className="text-green-600 border border-green-600 px-3 py-0.5 rounded-full text-xs active:bg-green-100"
-          onClick={(e) => {
-            e.stopPropagation();
-            addToCart(item);
-          }}
-        >
-          ADD
-        </button>
+                    className="relative px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-full text-xs shadow-lg transform transition-all duration-200 hover:shadow-xl hover:scale-105 active:scale-95 border-2 border-green-400/30"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addToCart(item);
+                    }}
+                    style={{
+                      boxShadow: '0 6px 20px rgba(34, 197, 94, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3)'
+                    }}
+                  >
+                    <span className="relative z-8">ADD +</span>
+                    
+                    {/* Button Shine */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent rounded-full opacity-0 hover:opacity-100 transition-opacity duration-300 transform -skew-x-12"></div>
+                  </button>
       </div>
     </div>
   </div>
@@ -180,7 +215,7 @@ const totalCount = items.length;
 
 
       {filteredItems.length === 0 && (
-        <p className="text-center text-gray-500 mt-8">No items found.</p>
+        <p className="text-center text-gray-500 mt-8">No items found.Coming soon..</p>
       )}
       
 
