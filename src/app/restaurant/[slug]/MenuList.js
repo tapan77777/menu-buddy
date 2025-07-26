@@ -1,10 +1,17 @@
 'use client';
 
 import HomeIconButton from '@/components/HomeIconButton';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+
+
 
 import dynamic from 'next/dynamic';
 const ScratchCardOffer = dynamic(() => import('@/components/ScratchCardOffer'), { ssr: false });
+const ItemDetailModal = dynamic(() => import('@/components/ItemDetailModal'), { ssr: false });
+const CartModal = dynamic(() => import('@/components/CartModal'), { ssr: false });
+const ImagePreviewModal = dynamic(() => import('@/components/ImagePreviewModal'), {
+  ssr: false,
+});
 
  
 
@@ -38,30 +45,40 @@ export default function MenuList({ restaurant, items }) {
 
 const [showCart, setShowCart] = useState(false);
 
-const addToCart = (item) => {
+const addToCart = useCallback((item) => {
   setCartItems((prev) => {
     const exists = prev.find((i) => i._id === item._id);
-    if (exists) return prev; // prevent duplicates
+    if (exists) return prev;
     return [...prev, item];
   });
-};
+}, []);
+
+
 //discount calculate
  const calculateDiscount = (current, original) => {
     return Math.round(((current-original) / original) * 100);
   };
 
 
-  const removeFromCart = (id) => {
-    setCartItems((prev) => prev.filter((item) => item._id !== id));
-  };
+  const removeFromCart = useCallback((itemId) => {
+  setCartItems((prev) => prev.filter((i) => i._id !== itemId));
+}, []);
 
-  const filteredItems = items.filter((item) => {
-    const matchesCategory = filter === 'all' || item.category.toLowerCase() === filter;
+
+  const filteredItems = useMemo(() => {
+  return items.filter((item) => {
+    const matchesCategory =
+      filter === 'all' || item.category.toLowerCase() === filter;
+
     const matchesSearch =
       item.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
       item.description.toLowerCase().includes(debouncedSearch.toLowerCase());
+
     return matchesCategory && matchesSearch;
   });
+}, [items, filter, debouncedSearch]); // ✅ only re-run when these change
+
+
 const totalCount = items.length;
 
 
@@ -221,72 +238,19 @@ const totalCount = items.length;
 
       {/* Popup Modal */}
       {selectedItem && (
-  <div
-    className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center sm:items-center"
-    onClick={() => setSelectedItem(null)}
-  >
-    <div
-      className="bg-white w-full sm:w-[90%] max-w-md rounded-t-3xl sm:rounded-2xl p-4 sm:p-6 relative overflow-y-auto max-h-[90vh]"
-      onClick={(e) => e.stopPropagation()}
-    >
-      {/* Close Button */}
-      <button
-        className="absolute top-3 right-4 text-gray-400 hover:text-black text-2xl"
-        onClick={() => setSelectedItem(null)}
-      >
-        &times;
-      </button>
-
-      {/* Image */}
-      {selectedItem.imageUrl && (
-        <img
-  src={selectedItem.imageUrl}
-  alt={selectedItem.name}
-  className="w-full h-48 object-cover rounded-xl mb-4 cursor-pointer"
-  onClick={() => setShowImagePreview(true)}
+        <ItemDetailModal
+  item={selectedItem}
+  onClose={() => setSelectedItem(null)}
+  onAddToCart={addToCart}
 />
 
-      )}
-
-      {/* Info */}
-      <h2 className="text-2xl font-bold mb-1 text-gray-900">{selectedItem.name}</h2>
-
-      {selectedItem.bestseller && (
-        <p className="text-red-500 text-sm mb-1">🔥 Bestseller</p>
-      )}
-
-      <p className="text-gray-600 mb-3">{selectedItem.description}</p>
-      <p className="text-sm text-gray-500 mb-2">Category: {selectedItem.category}</p>
-
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-green-700 font-bold text-xl">₹{selectedItem.price}</span>
-        <span className="text-sm text-yellow-500">⭐ {selectedItem.rating || '4.2'}</span>
-      </div>
-
-      <button
-        className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold text-lg hover:bg-green-700 transition"
-        onClick={() => {
-          addToCart(selectedItem);
-          setSelectedItem(null);
-        }}
-      >
-        Add to Cart
-      </button>
-    </div>
-  </div>
 )}
 
 {showImagePreview && (
-  <div
-    className="fixed inset-0 bg-black bg-opacity-90 z-[60] flex items-center justify-center transition-opacity duration-300 animate-fadeIn"
-    onClick={() => setShowImagePreview(false)}
-  >
-    <img
-      src={selectedItem.imageUrl}
-      alt="Full View"
-      className="max-w-full max-h-full object-contain animate-scaleIn"
-    />
-  </div>
+  <ImagePreviewModal
+    imageUrl={selectedItem?.imageUrl}
+    onClose={() => setShowImagePreview(false)}
+  />
 )}
 
 
@@ -307,46 +271,11 @@ const totalCount = items.length;
 
     {/* Slide-up Cart Popup */}
    {showCart && (
-  <div
-    className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center sm:items-center"
-    onClick={() => setShowCart(false)}
-  >
-    <div
-      className="bg-white w-full sm:w-[90%] max-w-md rounded-t-3xl sm:rounded-2xl p-6 relative overflow-y-auto max-h-[90vh]"
-      onClick={(e) => e.stopPropagation()}
-    >
-      {/* Close button */}
-      <button
-        className="absolute top-3 right-4 text-gray-400 hover:text-black text-2xl"
-        onClick={() => setShowCart(false)}
-      >
-        &times;
-      </button>
-
-      {/* Cart Title */}
-      <h2 className="text-2xl font-bold mb-4 text-gray-900">🛒 Your Cart</h2>
-
-      {cartItems.length > 0 ? (
-        <>
-          {cartItems.map((item) => (
-            <div key={item._id} className="flex justify-between items-center mb-3 text-black">
-              <span>{item.name}</span>
-              <span className="font-bold">₹{item.price}</span>
-            </div>
-          ))}
-
-          <button
-            onClick={() => setCartItems([])}
-            className="mt-6 w-full bg-red-500 text-white py-2 rounded-xl font-semibold hover:bg-red-600 transition"
-          >
-            Clear Cart
-          </button>
-        </>
-      ) : (
-        <p className="text-center text-gray-500">Your cart is empty.</p>
-      )}
-    </div>
-  </div>
+  <CartModal
+    cartItems={cartItems}
+    removeFromCart={removeFromCart}
+    setShowCart={setShowCart}
+  />
 )}
 
   </>

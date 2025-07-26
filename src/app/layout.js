@@ -14,9 +14,14 @@ export default function RootLayout({ children }) {
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#4CAF50" />
-        <link rel="apple-touch-icon" href="/favicon-alt.ico" />
+        <link rel="apple-touch-icon" href="icon-192x192.png" />
+        
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        
+
+      </body>
     </html>
   );
 }
