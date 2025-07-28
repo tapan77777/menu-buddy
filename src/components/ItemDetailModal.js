@@ -64,11 +64,13 @@ export default function ItemDetailModal({ item, onClose, onAddToCart }) {
 
   // Prevent body scroll when modal is open
   useEffect(() => {
+    if (showModal){
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, []);
+    }
+  }, [showModal]);
 
   return (
     <div
