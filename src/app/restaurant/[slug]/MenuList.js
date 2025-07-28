@@ -45,6 +45,19 @@ export default function MenuList({ restaurant, items }) {
 
 const [showCart, setShowCart] = useState(false);
 
+const updateQuantity = (id, newQuantity) => {
+  if (newQuantity <= 0) {
+    setCartItems(prev => prev.filter(item => item._id !== id));
+  } else {
+    setCartItems(prev =>
+      prev.map(item =>
+        item._id === id ? { ...item, quantity: newQuantity } : item
+      )
+    );
+  }
+};
+
+
 const addToCart = useCallback((item) => {
   setCartItems((prev) => {
     const exists = prev.find((i) => i._id === item._id);
@@ -258,24 +271,93 @@ const totalCount = items.length;
       {/* Floating Cart Preview */}
      {cartItems.length > 0 && !selectedItem && (
   <>
-    {/* Floating Cart Icon */}
-    <div
-      className="fixed bottom-6 right-4 sm:right-6 z-40 bg-gray-600 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg cursor-pointer transition duration-300"
-      onClick={() => setShowCart(!showCart)}
-    >
-      🛒
-      <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">
-        {cartItems.length}
-      </span>
+{/* Swiggy/Zomato Style Floating Cart */}
+<div
+  className="fixed bottom-6 right-4 sm:right-6 z-40 group cursor-pointer"
+  onClick={() => setShowCart(!showCart)}
+>
+  {/* Main Cart Container */}
+  <div className="relative">
+    {/* Cart Button with Food Delivery Styling */}
+    <div className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 hover:from-orange-600 hover:via-red-600 hover:to-pink-600 text-white rounded-2xl px-4 py-3 flex items-center gap-2 shadow-2xl hover:shadow-orange-500/25 transform hover:scale-105 transition-all duration-300 ease-out min-w-[120px]">
+      {/* Animated Cart Icon */}
+      <div className="relative">
+        <svg className="w-5 h-5 group-hover:animate-bounce" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M7 4V2C7 1.45 7.45 1 8 1H16C16.55 1 17 1.45 17 2V4H20C20.55 4 21 4.45 21 5S20.55 6 20 6H19V19C19 20.1 18.1 21 17 21H7C5.9 21 5 20.1 5 19V6H4C3.45 6 3 5.55 3 5S3.45 4 4 4H7ZM9 3V4H15V3H9ZM7 6V19H17V6H7Z"/>
+          <circle cx="9" cy="9" r="1"/>
+          <circle cx="15" cy="9" r="1"/>
+          <circle cx="9" cy="15" r="1"/>
+          <circle cx="15" cy="15" r="1"/>
+        </svg>
+        
+        {/* Floating Items Animation */}
+        {cartItems.length > 0 && (
+          <div className="absolute -top-2 -right-2 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div>
+        )}
+      </div>
+      
+      {/* Cart Text & Count */}
+      <div className="flex flex-col items-start leading-tight">
+        <span className="text-xs font-medium opacity-90">Cart</span>
+        <span className="text-sm font-bold">
+          {cartItems.length > 0 ? `${cartItems.length} item${cartItems.length > 1 ? 's' : ''}` : 'Empty'}
+        </span>
+      </div>
+      
+      {/* Arrow Icon */}
+      <svg className={`w-4 h-4 transition-transform duration-300 ${showCart ? 'rotate-180' : ''} group-hover:translate-x-1`} fill="currentColor" viewBox="0 0 24 24">
+        <path d="M8.59 16.59L13.17 12L8.59 7.41L10 6L16 12L10 18L8.59 16.59Z"/>
+      </svg>
     </div>
+    
+    {/* Pulsing Ring for Items */}
+    {cartItems.length > 0 && (
+      <div className="absolute inset-0 rounded-2xl border-2 border-orange-400 animate-pulse opacity-60"></div>
+    )}
+    
+    {/* Floating Notification Dots */}
+    {cartItems.length > 0 && (
+      <>
+        <div className="absolute -top-1 -left-1 w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0s'}}></div>
+        <div className="absolute -bottom-1 -left-2 w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+        <div className="absolute top-2 -right-3 w-1 h-1 bg-purple-400 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
+      </>
+    )}
+  </div>
+  
+  {/* Quick Preview on Hover */}
+  <div className="absolute bottom-full right-0 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none transform translate-y-2 group-hover:translate-y-0">
+    <div className="bg-white text-gray-800 px-4 py-3 rounded-xl shadow-2xl border min-w-[200px]">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+        <span className="font-semibold text-sm">Your Order</span>
+      </div>
+      <div className="text-xs text-gray-600">
+        {cartItems.length > 0 
+          ? `${cartItems.length} delicious item${cartItems.length > 1 ? 's' : ''} waiting!` 
+          : 'Add items to get started'}
+      </div>
+      <div className="absolute top-full right-6 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white"></div>
+    </div>
+  </div>
+</div>
+{/* Swiggy/Zomato Style Floating Cart */}
+
 
     {/* Slide-up Cart Popup */}
    {showCart && (
-  <CartModal
-    cartItems={cartItems}
-    removeFromCart={removeFromCart}
-    setShowCart={setShowCart}
-  />
+  <CartModal className="overflow-y-auto max-h-[60vh] px-6 py-4"
+
+  showCart={showCart}
+  setShowCart={setShowCart}
+  cartItems={cartItems}
+  setCartItems={setCartItems}
+  removeFromCart={_id => setCartItems(prev => prev.filter(item => item._id !== _id))}
+  updateQuantity={updateQuantity}
+  clearCart={() => setCartItems([])}
+/>
+
+
 )}
 
   </>
