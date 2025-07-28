@@ -9,9 +9,6 @@ export default function ItemDetailModal({ item, onClose, onAddToCart }) {
 
 
 
-  const displayItem = item || sampleItem;
-
-  if (!displayItem) return null;
 
   const handleClose = () => {
     setIsClosing(true);
