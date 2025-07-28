@@ -255,6 +255,7 @@ const totalCount = items.length;
   item={selectedItem}
   onClose={() => setSelectedItem(null)}
   onAddToCart={addToCart}
+  showModal={true}
 />
 
 )}

@@ -1,21 +1,26 @@
 'use client';
 import { useEffect, useState } from 'react';
 
-export default function ItemDetailModal({ item, onClose, onAddToCart }) {
+export default function ItemDetailModal({ item, onClose, onAddToCart, showModal }) {
   const [isClosing, setIsClosing] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
 
-
-
+  // Ensure item is valid
+  const displayItem = item || {
+    name: 'Unnamed Item',
+    price: 0,
+    originalPrice: 0,
+    description: '',
+  };
 
   const handleClose = () => {
     setIsClosing(true);
     setTimeout(() => {
       onClose?.();
       setIsClosing(false);
-    }, );
+    }, 300); // Add timeout delay if animation is used
   };
 
   const handleBackdropClick = (e) => {
@@ -26,48 +31,43 @@ export default function ItemDetailModal({ item, onClose, onAddToCart }) {
 
   const handleAddToCart = async () => {
     setIsLoading(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, ));
-    
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate delay
+
     const itemWithQuantity = { ...displayItem, quantity };
     onAddToCart?.(itemWithQuantity);
-    
+
     setIsLoading(false);
     setAddedToCart(true);
-    
-    // Auto close after success
+
     setTimeout(() => {
       handleClose();
-    }, 1500);
+    }, 1000);
   };
 
   const updateQuantity = (newQuantity) => {
-    if (newQuantity >= 1) {
-      setQuantity(newQuantity);
-    }
+    if (newQuantity >= 1) setQuantity(newQuantity);
   };
 
   const getTotalPrice = () => {
-    return displayItem.price * quantity;
+    return displayItem.price * quantity || 0;
   };
 
   const getSavings = () => {
-    if (displayItem.originalPrice && displayItem.originalPrice > displayItem.price) {
-      return (displayItem.originalPrice - displayItem.price) * quantity;
-    }
-    return 0;
+    const { originalPrice, price } = displayItem;
+    return originalPrice && originalPrice > price
+      ? (originalPrice - price) * quantity
+      : 0;
   };
 
-  // Prevent body scroll when modal is open
-useEffect(() => {
-  if (showModal) {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }
-}, [showModal]);
+  // 🛑 Prevent body scroll when modal is shown
+  useEffect(() => {
+    if (showModal) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [showModal]);
 
 
   return (
