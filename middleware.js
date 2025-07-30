@@ -1,43 +1,47 @@
-// middleware.js - Place this in your root directory (same level as pages folder)
+// middleware.js - Place this in your root directory (same level as pages or app folder)
 import { NextResponse } from 'next/server';
 
 export function middleware(request) {
   const host = request.headers.get('host') || '';
   const url = request.nextUrl.clone();
-  
-  // Extract subdomain
+
+  // Extract subdomain (e.g., "lha-kitchen" from "lha-kitchen.menubuddy.co.in")
   const subdomain = host.split('.')[0];
-  
-  // Skip if it's main domain, www, or localhost
-  if (subdomain === 'www' || 
-      subdomain === 'menubuddy' || 
-      host.includes('localhost') ||
-      host.includes('vercel.app')) {
+
+  // Skip rewriting for main domain or local development
+  if (
+    subdomain === 'www' || 
+    subdomain === 'menubuddy' || 
+    host.includes('localhost') || 
+    host.includes('vercel.app')
+  ) {
     return NextResponse.next();
   }
-  
-  // If it's a restaurant subdomain, rewrite to existing restaurant route
+
+  // Rewrite subdomain requests
   if (subdomain && subdomain !== 'www') {
-    // Check if it's already a restaurant path to avoid infinite loops
+    // Avoid infinite loop
     if (!url.pathname.startsWith('/restaurant/')) {
-      // Rewrite subdomain.menubuddy.co.in/menu -> menubuddy.co.in/restaurant/subdomain/menu
-      url.pathname = `/restaurant/${subdomain}${url.pathname}`;
+      // If root path → redirect to /restaurant/[subdomain]/menu
+      url.pathname = url.pathname === '/' 
+        ? `/restaurant/${subdomain}/menu` 
+        : `/restaurant/${subdomain}${url.pathname}`;
       return NextResponse.rewrite(url);
     }
   }
-  
+
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
+     * Match all paths except for:
+     * - api routes
+     * - static assets
+     * - image optimizations
+     * - favicon
      */
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
-}
+};
