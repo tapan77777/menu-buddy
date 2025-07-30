@@ -12,6 +12,7 @@ export async function GET() {
   }
 }
 
+
 export async function POST(request) {
   try {
     await connectToDB();
@@ -23,3 +24,4 @@ export async function POST(request) {
     return Response.json({ error: "Server Error" }, { status: 500 });
   }
 }
+
