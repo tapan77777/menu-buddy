@@ -1,10 +1,8 @@
+// /lib/utils/getSubdomain.js
 export function getSubdomain(hostname) {
-  const domain = "menubuddy.co.in"; // You can also fetch from env
-  const parts = hostname.split(".");
+  const baseDomain = "menubuddy.co.in"; // or from env if dynamic
+  if (!hostname.endsWith(baseDomain)) return null;
 
-  if (hostname.endsWith(domain) && parts.length >= 3) {
-    return parts[0].toLowerCase(); // e.g., 'lha-kitchen'
-  }
-
-  return null;
+  const sub = hostname.replace(`.${baseDomain}`, "");
+  return sub === "www" || sub === "menubuddy" ? null : sub;
 }

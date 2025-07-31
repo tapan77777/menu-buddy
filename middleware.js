@@ -1,27 +1,19 @@
 // middleware.js
-import { NextResponse } from 'next/server';
+import { getSubdomain } from "@/lib/utils/getSubdomain";
+import { NextResponse } from "next/server";
 
 export function middleware(request) {
-  const hostname = request.headers.get('host') || '';
-  const url = request.nextUrl.clone();
+  const hostname = request.headers.get("host") || "";
+  const url = request.nextUrl;
+  const subdomain = getSubdomain(hostname);
 
-  const baseDomain = 'menubuddy.co.in'; // Adjust if you change domain
-  const subdomain = hostname.replace(`.${baseDomain}`, '');
-
-  // If not a subdomain or already hitting restaurant path, ignore
+  // Prevent rewrites for assets and _next folder
   if (
-    hostname === baseDomain ||
-    hostname === `www.${baseDomain}` ||
-    url.pathname.startsWith('/restaurant') ||
-    url.pathname.startsWith('/api') || // ignore API
-    url.pathname.startsWith('/_next') || // ignore internal Next.js
-    url.pathname.includes('.') // ignore static files
+    subdomain &&
+    !url.pathname.startsWith("/restaurant") &&
+    !url.pathname.startsWith("/_next") &&
+    !url.pathname.includes(".")
   ) {
-    return NextResponse.next();
-  }
-
-  // Rewrite subdomain to /restaurant/[slug]
-  if (subdomain) {
     url.pathname = `/restaurant/${subdomain}`;
     return NextResponse.rewrite(url);
   }
@@ -29,6 +21,7 @@ export function middleware(request) {
   return NextResponse.next();
 }
 
+// This ensures middleware runs on every path except static files
 export const config = {
-  matcher: ['/((?!_next|favicon.ico).*)'], // Protects _next and static files
+  matcher: ["/((?!api|_next|.*\\..*).*)"],
 };
