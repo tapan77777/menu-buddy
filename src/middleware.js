@@ -1,13 +1,13 @@
-// middleware.js
+// src/middleware.js
 import { getSubdomain } from "@/lib/utils/getSubdomain";
 import { NextResponse } from "next/server";
 
 export function middleware(request) {
   const hostname = request.headers.get("host") || "";
-  const url = request.nextUrl;
+  const url = request.nextUrl.clone();
   const subdomain = getSubdomain(hostname);
 
-  // Prevent rewrites for assets and _next folder
+  // Skip assets, API, or already routed restaurant paths
   if (
     subdomain &&
     !url.pathname.startsWith("/restaurant") &&
@@ -21,7 +21,6 @@ export function middleware(request) {
   return NextResponse.next();
 }
 
-// This ensures middleware runs on every path except static files
 export const config = {
-  matcher: ["/((?!api|_next|.*\\..*).*)"],
+  matcher: ["/((?!_next|.*\\..*).*)"],
 };

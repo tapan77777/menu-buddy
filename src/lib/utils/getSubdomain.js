@@ -1,8 +1,8 @@
-// /lib/utils/getSubdomain.js
+// src/lib/utils/getSubdomain.js
 export function getSubdomain(hostname) {
-  const baseDomain = "menubuddy.co.in"; // or from env if dynamic
-  if (!hostname.endsWith(baseDomain)) return null;
+  const base = "menubuddy.co.in";
+  if (!hostname.endsWith(base)) return null;
 
-  const sub = hostname.replace(`.${baseDomain}`, "");
+  const sub = hostname.replace(`.${base}`, "");
   return sub === "www" || sub === "menubuddy" ? null : sub;
 }
