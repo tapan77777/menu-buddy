@@ -120,7 +120,7 @@ export default function AnalyticsPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
-              <p className="mt-1 text-gray-600">Track your restaurant's performance and customer engagement</p>
+              <p className="mt-1 text-gray-600">Track your restaurants performance and customer engagement</p>
             </div>
             <div className="flex items-center space-x-4">
               <Calendar className="h-5 w-5 text-gray-400" />
