@@ -193,7 +193,7 @@ route.push
                     href="/register"
                     className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
                   >
-                    Dont have an account? Sign up
+                    sign up
                   </Link>
                   
                   <div className="flex items-center justify-center space-x-4 text-sm text-slate-500">
