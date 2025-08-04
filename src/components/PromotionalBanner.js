@@ -5,7 +5,7 @@ export default function PromotionalBanner({ promo }) {
   return (
     <section className="w-full relative overflow-hidden rounded-none mx-0 my-2 shadow-lg sm:rounded-lg sm:mx-2">
       {/* Background Image with Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-green-400 via-emerald-500 to-teal-600">
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600">
         {/* Food pattern overlay */}
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-4 right-8 text-6xl">🌿</div>
@@ -60,7 +60,7 @@ export default function PromotionalBanner({ promo }) {
           <h3 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
             🔥 <span>Hot Deals from Restaurants</span>
           </h3>
-          
+        
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {[
               { name: "Pizza Palace", offer: "🕒 Open till 11 PM", time: "25 mins", discount: "50%",image: "/default-restaurant.jpg"},

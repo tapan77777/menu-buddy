@@ -18,6 +18,7 @@ export async function GET(_, context) {
     return Response.json({
       success: true,
       restaurant: {
+        _id: restaurant._id, 
         name: restaurant.name,
         address: restaurant.address,
         logoUrl: restaurant.logoUrl,

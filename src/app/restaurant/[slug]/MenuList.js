@@ -36,7 +36,24 @@ export default function MenuList({ restaurant, items }) {
   const [showImagePreview, setShowImagePreview] = useState(false);
 
 
+useEffect(() => {
+  if (restaurant?._id) {
+    fetch("/api/track", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        restaurantId: restaurant._id,
+        type: "menu_viewed",
+      }),
+    });
+  }
+}, [restaurant?._id]);
+
+
+
   const debouncedSearch = useDebounce(searchQuery, 300);
+
+ 
 
   // Clear cart on unmount (navigation away)
   useEffect(() => {
@@ -55,6 +72,7 @@ const updateQuantity = (id, newQuantity) => {
       )
     );
   }
+
 };
 
 
@@ -65,6 +83,22 @@ const addToCart = useCallback((item) => {
     return [...prev, item];
   });
 }, []);
+
+
+const handleItemClick = (item) => {
+  fetch("/api/track", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      restaurantId: restaurant._id,
+      itemId: item._id,
+      type: "item_clicked",
+    }),
+  });
+
+  setSelectedItem(item); // existing behavior
+};
+
 
 
 //discount calculate
@@ -93,6 +127,7 @@ const addToCart = useCallback((item) => {
 
 
 const totalCount = items.length;
+
 
 
   return (
@@ -171,7 +206,7 @@ const totalCount = items.length;
     <div
   key={item._id}
   className="relative overflow-hidden rounded-2xl bg-white border border-gray-200 shadow-lg active:scale-[0.98] transition-transform duration-200"
-  onClick={() => setSelectedItem(item)}
+  onClick={() => handleItemClick(item)}
 >
   {/* Discounted badge */}
 

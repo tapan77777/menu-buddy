@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -127,10 +128,27 @@ export default function AdminDashboard() {
         </div>
       </header>
 
+
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+
+          <Link href="/admin/dashboard/analytics">
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <span className="text-blue-600 font-semibold">📊</span>
+                </div>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-slate-500">Analytics</p>
+                
+              </div>
+            </div>
+          </div>
+</Link>
           <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
             <div className="flex items-center">
               <div className="flex-shrink-0">

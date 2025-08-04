@@ -1,16 +1,16 @@
 "use client";
 import {
-    Edit3,
-    Eye,
-    MapPin,
-    Plus,
-    Save,
-    Search,
-    Store,
-    Trash2,
-    TrendingUp,
-    Users,
-    X
+  Edit3,
+  Eye,
+  MapPin,
+  Plus,
+  Save,
+  Search,
+  Store,
+  Trash2,
+  TrendingUp,
+  Users,
+  X
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -28,6 +28,8 @@ const OwnerDashboard = () => {
     email: '',
     slug: ''
   });
+
+  
 
   useEffect(() => {
     fetchRestaurants();
