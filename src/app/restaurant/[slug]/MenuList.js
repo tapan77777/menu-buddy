@@ -38,16 +38,25 @@ export default function MenuList({ restaurant, items }) {
 
 useEffect(() => {
   if (restaurant?._id) {
-    fetch("/api/track", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        restaurantId: restaurant._id,
-        type: "menu_viewed",
-      }),
-    });
+    const viewedKey = `viewed-${restaurant._id}`;
+
+    if (!sessionStorage.getItem(viewedKey)) {
+      // Track only if not already viewed in this session
+      fetch("/api/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          restaurantId: restaurant._id,
+          type: "menu_viewed",
+        }),
+      });
+
+      // Mark as viewed
+      sessionStorage.setItem(viewedKey, "true");
+    }
   }
 }, [restaurant?._id]);
+
 
 
 

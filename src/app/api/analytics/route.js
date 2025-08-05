@@ -1,6 +1,9 @@
 import { connectToDB } from "@/lib/db";
 import Analytics from "@/models/analytics";
 import mongoose from "mongoose";
+import NodeCache from "node-cache";
+
+const cache = new NodeCache({ stdTTL: 300 }); // Cache for 5 minutes
 
 export async function GET(req) {
   await connectToDB();
@@ -13,7 +16,12 @@ export async function GET(req) {
     return new Response(JSON.stringify({ error: "Missing parameters" }), { status: 400 });
   }
 
-  // Set range start date
+  const cacheKey = `analytics:${restaurantId}:${range}`;
+  const cached = cache.get(cacheKey);
+  if (cached) {
+    return new Response(JSON.stringify(cached), { status: 200 });
+  }
+
   const now = new Date();
   let startDate = new Date();
 
@@ -60,7 +68,7 @@ export async function GET(req) {
     },
     {
       $lookup: {
-        from: "menuitems", // same as your MenuItem collection name
+        from: "menuitems", // Your collection name must match exactly
         localField: "_id",
         foreignField: "_id",
         as: "itemDetails"
@@ -78,5 +86,8 @@ export async function GET(req) {
     { $limit: 5 }
   ]);
 
-  return new Response(JSON.stringify({ data, itemClicks }), { status: 200 });
+  const result = { data, itemClicks };
+  cache.set(cacheKey, result); // ✅ Store in cache
+
+  return new Response(JSON.stringify(result), { status: 200 });
 }
