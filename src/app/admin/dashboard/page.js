@@ -23,7 +23,7 @@ export default function AdminDashboard() {
     } else {
       setLoading(false);
     }
-  }, []);
+  }, [router]);
 
   const startEditing = (item) => {
     setEditingItem(item);

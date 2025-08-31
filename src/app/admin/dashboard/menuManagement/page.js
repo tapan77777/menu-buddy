@@ -428,8 +428,7 @@ function MenuManagement() {
                           <Image
   src={item.imageUrl}
   alt={item.name}
-  width={96}     // px = same as h-24 (24 * 4)
-  height={96}    // px
+  fill
   className="h-24 w-24 rounded object-cover"
 />
                           {item.bestseller && (
