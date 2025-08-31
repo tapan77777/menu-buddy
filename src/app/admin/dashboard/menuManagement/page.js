@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-function menuManagement() {
+function MenuManagement() {
   
           const [items, setItems] = useState([]);
           const [token, setToken] = useState("");
@@ -703,4 +703,4 @@ function menuManagement() {
           );
         }
 
-export default menuManagement
+export default MenuManagement

@@ -191,7 +191,7 @@ export default function AdminDashboard() {
               Welcome back! 👋
             </h2>
             <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-              Manage your restaurant efficiently with MenuBuddy's powerful admin tools
+              Manage your restaurant efficiently with MenuBuddys powerful admin tools
             </p>
           </div>
         </div>
