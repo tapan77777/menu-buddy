@@ -1,4 +1,5 @@
 'use client'
+import Image from "next/image";
 export default function PromotionalBanner({ promo }) {
   if (!promo) return null;
 
@@ -71,13 +72,13 @@ export default function PromotionalBanner({ promo }) {
             ].map((restaurant, i) => (
               <div key={i} className="flex-shrink-0 w-36 bg-white/90 backdrop-blur-sm rounded-xl p-3 border border-white/20">
                 <div className="w-full h-16 rounded-lg mb-2 overflow-hidden">
-                  <img 
-          src={restaurant.image}
-          className="w-full h-full object-cover"
-          onError={(e) => {
-            e.target.src = '/default-restaurant.jpg'; // Fallback
-          }}
-        />
+           <Image
+  src={restaurant.image || "/default-restaurant.jpg"}
+  alt="Restaurant"
+  width={800}
+  height={600}
+  className="w-full h-full object-cover"
+/>
                 </div>
                 <h4 className="font-semibold text-xs text-gray-800 mb-1 truncate">{restaurant.name}</h4>
                 <p className="text-xs text-gray-600 mb-1">{restaurant.offer}</p>

@@ -252,7 +252,7 @@ const StyledQR = forwardRef(({
         qrRef.current.innerHTML = '';
       }
     };
-  }, [url, theme, brandStyle, logoImage, size, errorCorrectionLevel, margin]); // ADD brandStyle HERE
+  }, [url, theme, brandStyle, logoImage, size, errorCorrectionLevel, margin,gene]); // ADD brandStyle HERE
 
   const getThemeDisplayName = (themeName) => {
     const themeNames = {

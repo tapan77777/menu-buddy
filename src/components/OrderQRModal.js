@@ -50,7 +50,7 @@ export default function OrderQRModal({ cartItems = [], onClose }) {
     };
     document.addEventListener('keydown', handleEsc);
     return () => document.removeEventListener('keydown', handleEsc);
-  }, []);
+  }, [handleClose]);
 
   return (
     <div 

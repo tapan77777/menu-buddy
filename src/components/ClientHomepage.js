@@ -2,6 +2,7 @@
 'use client';
 import PromotionalBanner from '@/components/PromotionalBanner';
 import SearchBar from '@/components/SearchBar';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import Header from './Header';
@@ -42,11 +43,13 @@ export default function ClientHomePage({ initialRestaurants, initialError }) {
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-pink-50 to-white">
         <header className="bg-gradient-to-r from-red-800 via-red-600 to-red-400 shadow-md relative overflow-hidden">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center gap-3">
-            <img
-              src="/favicon-alt.ico"
-              alt="MenuBuddy Logo"
-              className="w-10 h-10 rounded-full shadow-lg ring-2 ring-white"
-            />
+           <Image
+  src="/favicon-alt.ico"
+  alt="MenuBuddy Logo"
+  width={40}   // w-10 = 40px
+  height={40}  // h-10 = 40px
+  className="w-10 h-10 rounded-full shadow-lg ring-2 ring-white"
+/>
             <h1 className="text-xl sm:text-2xl font-bold text-white">MenuBuddy</h1>
           </div>
         </header>
@@ -98,12 +101,14 @@ export default function ClientHomePage({ initialRestaurants, initialError }) {
                   data-index={index}
                 >
                   <div className="relative">
-                    <img
-                      src={rest.logoUrl || "/default-restaurant.jpg"}
-                      alt={rest.name}
-                      className="w-full h-40 object-cover transition-all duration-300 hover:scale-105"
-                      loading="lazy"
-                    />
+                   <Image
+  src={rest.logoUrl || "/default-restaurant.jpg"}
+  alt={rest.name}
+  width={800}
+  height={160}
+  className="w-full h-40 object-cover transition-all duration-300 hover:scale-105"
+  loading="lazy"
+/>
                     <div className="absolute top-4 right-4 bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg transform rotate-3 group-hover:rotate-0 transition-transform duration-300">
                       Flat ₹50 OFF
                     </div>

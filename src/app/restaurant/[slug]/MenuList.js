@@ -1,6 +1,7 @@
 'use client';
 
 import HomeIconButton from '@/components/HomeIconButton';
+import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 
@@ -147,19 +148,23 @@ const totalCount = items.length;
 {/* Top Restaurant Banner Section */}
 <div className="relative mb-12">
   {/* Banner Image */}
-  <img
-    src={restaurant?.logoUrl || '/default-restaurant.jpg'}
-    alt="Restaurant Banner"
-    className="w-full h-40 object-cover rounded-b-xl"
-  />
+  <Image
+  src={restaurant?.logoUrl || '/default-restaurant.jpg'}
+  alt="Restaurant Banner"
+  width={800}
+  height={160}
+  className="w-full h-40 object-cover rounded-b-xl"
+/>
 
   {/* Circular Logo + Name */}
   <div className="absolute -bottom-10 left- flex items-center gap-4">
-    <img
-      src={restaurant?.logoUrl || '/default-restaurant.jpg'}
-      alt="Restaurant Logo"
-      className="w-20 h-20 rounded-full border-4 border-white shadow-md"
-    />
+    <Image
+  src={restaurant?.logoUrl || '/default-restaurant.jpg'}
+  alt="Restaurant Logo"
+  width={80}   // w-20 = 80px
+  height={80}  // h-20 = 80px
+  className="w-20 h-20 rounded-full border-4 border-white shadow-md"
+/>
     <div className="bg-black/50 p-2 rounded-xl">
   <h1 className="text-xl sm:text-2xl font-bold text-white">{restaurant?.name}</h1>
   <p className="text-sm sm:text-base text-white">{restaurant?.address}</p>
@@ -226,11 +231,13 @@ const totalCount = items.length;
               </div>
 
   <div className="flex">
-    <img
-      src={item.imageUrl}
-      alt={item.name}
-      className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-l-2xl"
-    />
+   <Image
+  src={item.imageUrl}
+  alt={item.name}
+  width={128}   // sm:w-32 = 128px
+  height={128}  // sm:h-32 = 128px
+  className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-l-2xl"
+/>
     <div className="flex flex-col justify-between p-3 flex-grow">
       <div className="flex justify-between items-center">
         <div>

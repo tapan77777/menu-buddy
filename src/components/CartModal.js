@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import OrderQRModal from './OrderQRModal';
 
@@ -117,11 +118,13 @@ const getTotalSavings = () => {
           className="flex items-center gap-3 bg-gray-50 rounded-2xl p-3 hover:bg-gray-100 transition-colors duration-200"
         >
           {/* Item Image */}
-          <img
-            src={item.imageUrl}
-            alt={item.name}
-            className="w-16 h-16 object-cover rounded-xl shadow-md"
-          />
+          <Image
+  src={item.imageUrl}
+  alt={item.name}
+  width={64}   // w-16 = 64px
+  height={64}  // h-16 = 64px
+  className="w-16 h-16 object-cover rounded-xl shadow-md"
+/>
 
           {/* Item Details */}
           <div className="flex-1 min-w-0">

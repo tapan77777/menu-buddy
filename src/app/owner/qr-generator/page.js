@@ -1,6 +1,7 @@
 'use client';
 
 import StyledQR from '@/components/StyledQR';
+import Image from 'next/image';
 import { useCallback, useRef, useState } from 'react';
 
 export default function QRGeneratorPage() {
@@ -202,11 +203,13 @@ export default function QRGeneratorPage() {
                 />
                 {logoPreview && (
                   <div className="flex items-center space-x-3">
-                    <img
-                      src={logoPreview}
-                      alt="Logo preview"
-                      className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded-lg border"
-                    />
+                    <Image
+  src={logoPreview || "/default-logo.png"} // fallback if empty
+  alt="Logo preview"
+  width={48}   // w-12 = 48px (use largest to match responsive)
+  height={48}  // h-12 = 48px
+  className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded-lg border"
+/>
                     <button
                       onClick={removeLogo}
                       className="text-sm text-red-600 hover:text-red-800"

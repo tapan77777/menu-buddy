@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
 export default function ItemDetailModal({ item, onClose, onAddToCart, showModal }) {
@@ -110,13 +111,15 @@ export default function ItemDetailModal({ item, onClose, onAddToCart, showModal 
         <div className="overflow-y-auto max-h-[90vh]">
           {/* Image Section */}
           <div className="relative h-64 sm:h-80">
-            <img
-              src={displayItem.imageUrl}
-              alt={displayItem.name}
-              className={`w-full h-full object-cover transition-transform duration-700 ${
-                isClosing ? 'scale-110' : 'scale-100'
-              }`}
-            />
+            <Image
+  src={displayItem.imageUrl}
+  alt={displayItem.name}
+  width={800}
+  height={600}
+  className={`w-full h-full object-cover transition-transform duration-700 ${
+    isClosing ? 'scale-110' : 'scale-100'
+  }`}
+/>
             
             {/* Image Overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />

@@ -12,6 +12,7 @@ import {
   Users,
   X
 } from 'lucide-react';
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
 const OwnerDashboard = () => {
@@ -344,7 +345,13 @@ const OwnerDashboard = () => {
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
                               {restaurant.logo.startsWith('http') ? 
-                                <img src={restaurant.logo} alt="Logo" className="w-8 h-8 rounded" /> :
+                                <Image
+  src={restaurant.logo}
+  alt="Logo"
+  width={32}          // w-8 = 32px
+  height={32}         // h-8 = 32px
+  className="rounded"
+/> :
                                 <span className="text-lg">{restaurant.logo}</span>
                               }
                             </div>
@@ -444,7 +451,13 @@ const OwnerDashboard = () => {
                     <div className="text-lg font-bold text-gray-400">#{index + 1}</div>
                     <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
                       {restaurant.logo.startsWith('http') ? 
-                        <img src={restaurant.logo} alt="Logo" className="w-8 h-8 rounded" /> :
+                        <Image
+  src={restaurant.logo || "/default-logo.png"} // fallback if no logo
+  alt="Logo"
+  width={32}   // same as w-8
+  height={32}  // same as h-8
+  className="rounded"
+/> :
                         <span className="text-lg">{restaurant.logo}</span>
                       }
                     </div>

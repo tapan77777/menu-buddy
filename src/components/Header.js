@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -14,12 +15,14 @@ export default function Header() {
       <div className="container mx-auto px-2 sm:px-6 lg:px-8 py-4 flex items-center gap-3 relative">
         {/* Logo - Clickable */}
         <div className="relative">
-          <img
-            src="/favicon-alt.ico"
-            alt="MenuBuddy Logo"
-            className="w-10 h-10 rounded-full shadow-lg ring-2 ring-white cursor-pointer hover:scale-110 transition-transform duration-200"
-            onClick={handleLogoClick}
-          />
+          <Image
+  src="/favicon-alt.ico"
+  alt="MenuBuddy Logo"
+  width={40}   // w-10 = 40px
+  height={40}  // h-10 = 40px
+  className="w-10 h-10 rounded-full shadow-lg ring-2 ring-white cursor-pointer hover:scale-110 transition-transform duration-200"
+  onClick={handleLogoClick}
+/>
           
           {/* Admin Button - Slides from logo to left */}
           <div className={`absolute top-0 transition-all duration-500 ease-out ${

@@ -1,5 +1,6 @@
 "use client";
 import HomeIconButton from "@/components/HomeIconButton";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -47,10 +48,12 @@ export default function RegisterPage() {
       <div className="w-full max-w-lg">
         {/* Header */}
         <div className="text-center mb-8">
-            <img
-  src="/favicon-alt.ico"  // or your actual path
+ <Image
+  src="/favicon-alt.ico"        // or your actual logo path
   alt="Logo"
-  className="h-8 w-auto object-contain inline-flex items-center justify-center w-16 h-16  rounded-full mb-4"
+  width={64}                    // w-16 = 64px
+  height={64}                   // h-16 = 64px
+  className="h-8 w-auto object-contain inline-flex items-center justify-center rounded-full mb-4"
 />
 <HomeIconButton/>
           
