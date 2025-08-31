@@ -150,7 +150,7 @@ const QrOrderScanner = () => {
 
       {orders.length > 0 && (
         <div className="flex justify-between items-center mb-2">
-          <h3 className="font-semibold text-lg text-gray-100">📝 Orders</h3>
+          <h3 className="text-black font-semibold text-lg text-gray-100">📝 Orders</h3>
           <button
             className="text-sm bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
             onClick={handleClearAll}
@@ -191,6 +191,7 @@ const QrOrderScanner = () => {
 
                 <div className="mt-2 text-right font-bold text-gray-800">
                   Total: ₹{total}
+                  
                 </div>
 
                 <div className="mt-3 flex justify-between">

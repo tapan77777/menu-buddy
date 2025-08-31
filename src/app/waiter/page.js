@@ -38,13 +38,24 @@ export default function WaiterPage() {
     };
   }, []);
 
-  const handleScanSuccess = () => {
-    setScanCount(prev => prev + 1);
-    // Add haptic feedback on mobile
-    if ('vibrate' in navigator) {
-      navigator.vibrate(100);
-    }
-  };
+const handleScanSuccess = async (orderData) => {
+  try {
+    const res = await fetch("/api/orders", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem("token")}` // your JWT
+      },
+      body: JSON.stringify(orderData)
+    });
+    const newOrder = await res.json();
+
+    console.log("Order saved:", newOrder);
+  } catch (err) {
+    console.error("Order save error:", err);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
