@@ -27,6 +27,7 @@ const StyledQR = forwardRef(({
   const [error, setError] = useState(null);
 
   // Responsive size based on screen width
+ const generateQR = useCallback(async () => {
   const getResponsiveSize = () => {
     if (typeof window !== 'undefined') {
       const screenWidth = window.innerWidth;
@@ -37,9 +38,9 @@ const StyledQR = forwardRef(({
     return size;
   };
 
-  // ✅ Wrap generateQR in useCallback so it's stable
-  const generateQR = useCallback(async () => {
-    if (!qrRef.current || !url) return;
+  if (!qrRef.current || !url) return;
+
+
 
     setIsLoading(true);
     setError(null);
@@ -107,7 +108,7 @@ const StyledQR = forwardRef(({
     } finally {
       setIsLoading(false);
     }
-  }, [url, theme, brandStyle, logoImage, errorCorrectionLevel, margin,getResponsiveSize]);
+  }, [url, theme, brandStyle, logoImage, size, errorCorrectionLevel, margin]);
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
