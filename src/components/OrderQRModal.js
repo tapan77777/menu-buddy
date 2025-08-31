@@ -39,11 +39,12 @@ export default function OrderQRModal({ cartItems = [], onClose }) {
 
   const qrValue = JSON.stringify(orderData);
 
-  const handleClose = () => {
+  // ✅ stable reference
+  const handleClose = useCallback(() => {
     setIsClosing(true);
     setTimeout(() => onClose(), 200);
-  };
-
+  }, [onClose]);
+  
   useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === 'Escape') handleClose();

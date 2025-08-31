@@ -244,15 +244,17 @@ const StyledQR = forwardRef(({
   };
 
   // UPDATE useEffect dependency - Add brandStyle
-  useEffect(() => {
-    generateQR();
+ 
+useEffect(() => {
+  generateQR();
 
-    return () => {
-      if (qrRef.current) {
-        qrRef.current.innerHTML = '';
-      }
-    };
-  }, [url, theme, brandStyle, logoImage, size, errorCorrectionLevel, margin,gene]); // ADD brandStyle HERE
+  const node = qrRef.current; // copy ref for cleanup
+  return () => {
+    if (node) {
+      node.innerHTML = "";
+    }
+  };
+},  [generateQR,url, theme, brandStyle, logoImage, size, errorCorrectionLevel, margin,gene]); // ADD brandStyle HERE
 
   const getThemeDisplayName = (themeName) => {
     const themeNames = {
