@@ -1,5 +1,5 @@
 'use client'
-
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -24,7 +24,7 @@ function MenuManagement() {
             } else {
               setLoading(false);
             }
-          }, []);
+          }, [router]);
         
           const startEditing = (item) => {
             setEditingItem(item);
@@ -425,11 +425,13 @@ function MenuManagement() {
                     >
                       {item.imageUrl && (
                         <div className="relative w-full h-48 overflow-hidden">
-                          <img
-                            src={item.imageUrl}
-                            alt={item.name}
-                            className="w-full h-full object-cover"
-                          />
+                          <Image
+  src={item.imageUrl}
+  alt={item.name}
+  width={96}     // px = same as h-24 (24 * 4)
+  height={96}    // px
+  className="h-24 w-24 rounded object-cover"
+/>
                           {item.bestseller && (
                             <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium">
                               🔥 Bestseller
