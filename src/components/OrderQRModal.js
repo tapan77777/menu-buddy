@@ -71,7 +71,7 @@ export default function OrderQRModal({ cartItems = [], onClose }) {
         
 
           <div className="text-center">
-            <h2 className="text-xl font-bold mb-1">Order Ready!</h2>
+            
             <p className="text-emerald-100 text-sm">Show this QR code to your waiter</p>
           </div>
         </div>
@@ -85,7 +85,7 @@ export default function OrderQRModal({ cartItems = [], onClose }) {
             <div className="inline-block p-4 bg-white rounded-xl shadow-lg border-2 border-emerald-100">
               <QRCodeCanvas 
                 value={qrValue} 
-                size={250}
+                size={290}
                 level="H"
                 fgColor="#030404ff"
                 bgColor="#ffffff"
