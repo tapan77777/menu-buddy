@@ -107,7 +107,7 @@ const StyledQR = forwardRef(({
     } finally {
       setIsLoading(false);
     }
-  }, [url, theme, brandStyle, logoImage, size, errorCorrectionLevel, margin,getResponsiveSize]);
+  }, [url, theme, brandStyle, logoImage, errorCorrectionLevel, margin,getResponsiveSize]);
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
