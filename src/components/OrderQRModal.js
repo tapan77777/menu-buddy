@@ -1,6 +1,6 @@
 'use client';
 import { QRCodeCanvas } from 'qrcode.react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export default function OrderQRModal({ cartItems = [], onClose }) {
   const [isClosing, setIsClosing] = useState(false);
@@ -44,7 +44,7 @@ export default function OrderQRModal({ cartItems = [], onClose }) {
     setIsClosing(true);
     setTimeout(() => onClose(), 200);
   }, [onClose]);
-  
+
   useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === 'Escape') handleClose();
