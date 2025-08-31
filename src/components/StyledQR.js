@@ -254,7 +254,7 @@ useEffect(() => {
       node.innerHTML = "";
     }
   };
-},  [generateQR,url, theme, brandStyle, logoImage, size, errorCorrectionLevel, margin,gene]); // ADD brandStyle HERE
+},  [generateQR,url, theme, brandStyle, logoImage, size, errorCorrectionLevel, margin]); // ADD brandStyle HERE
 
   const getThemeDisplayName = (themeName) => {
     const themeNames = {

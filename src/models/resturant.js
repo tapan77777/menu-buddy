@@ -58,8 +58,7 @@ const RestaurantSchema = new mongoose.Schema({
   razorpayPaymentId: String,
 }, { timestamps: true });
 
-// ✅ ADD THIS INDEX - Add index for subdomain performance
-RestaurantSchema.index({ subdomain: 1 });
+
 
 // Add methods
 RestaurantSchema.methods.isSubscriptionActive = function() {
