@@ -181,7 +181,7 @@ const getTotalSavings = () => {
           Subtotal ({cartItems.reduce((sum, item) => sum + Number(item.quantity || 1), 0)} items)
         </span>
         <span className="font-semibold text-black">
-          ₹{cartItems.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity || 1)), 0)}
+          ₹{cartItems.reduce((sum, item) => sum + (Number(item.price+50) * Number(item.quantity || 1)), 0)}
         </span>
       </div>
 
