@@ -1,5 +1,7 @@
-// src/app/page.js (Server Component)
-export const revalidate = 60; // ISR — revalidate every 60 seconds
+
+
+// src/app/explore/page.js
+export const revalidate = 60;
 
 import ClientHomePage from '@/components/ClientHomepage';
 
@@ -28,23 +30,23 @@ export async function generateMetadata() {
         }
       ],
       description: "Explore digital menus with QR, promotions, and more.",
-      url: "https://menubuddy.co.in",
+      url: "https://menubuddy.co.in/explore",
       siteName: "MenuBuddy",
       type: "website"
     },
     alternates: {
-      canonical: "https://menubuddy.co.in"
+      canonical: "https://menubuddy.co.in/explore"
     }
   };
 }
 
-export default async function HomePage() {
+export default async function ExplorePage() {
   let restaurants = [];
   let error = null;
 
   try {
     const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurant-list`, {
-      next: { revalidate: 60 } // ISR cache for 60 seconds
+      next: { revalidate: 60 }
     });
     const data = await res.json();
 
@@ -58,7 +60,6 @@ export default async function HomePage() {
     console.error('Error fetching restaurants:', err);
   }
 
-  // Pass data to client component
   return (
     <ClientHomePage 
       initialRestaurants={restaurants} 

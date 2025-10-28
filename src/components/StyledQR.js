@@ -1,14 +1,28 @@
 'use client';
 
-import QRCodeStyling from 'qr-code-styling';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 
-// ENHANCED THEME STYLES
 const themeStyles = {
-  classic: { /* ... unchanged ... */ },
-  funky: { /* ... unchanged ... */ },
-  elegant: { /* ... unchanged ... */ },
-  branded: { /* ... unchanged ... */ }
+  classic: {
+    colorDark: '#000000',
+    colorLight: '#ffffff',
+    name: 'Professional Classic'
+  },
+  funky: {
+    colorDark: '#E91E63',
+    colorLight: '#ffffff',
+    name: 'Vibrant Funky'
+  },
+  elegant: {
+    colorDark: '#1A237E',
+    colorLight: '#ffffff',
+    name: 'Sophisticated Elegant'
+  },
+  branded: {
+    colorDark: '#1976D2',
+    colorLight: '#ffffff',
+    name: 'Corporate Branded'
+  }
 };
 
 const StyledQR = forwardRef(({ 
@@ -22,25 +36,27 @@ const StyledQR = forwardRef(({
   margin = 10
 }, ref) => {
   const qrRef = useRef(null);
-  const qrInstance = useRef(null);
+  const canvasRef = useRef(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [qrScript, setQrScript] = useState(null);
 
-  // Responsive size based on screen width
- const generateQR = useCallback(async () => {
-  const getResponsiveSize = () => {
-    if (typeof window !== 'undefined') {
-      const screenWidth = window.innerWidth;
-      if (screenWidth < 480) return Math.min(size, 240);
-      if (screenWidth < 768) return Math.min(size, 280);
-      return size;
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !window.QRCode) {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+      script.async = true;
+      script.onload = () => setQrScript(true);
+      document.head.appendChild(script);
+    } else if (window.QRCode) {
+      setQrScript(true);
     }
-    return size;
-  };
+  }, []);
 
-  if (!qrRef.current || !url) return;
-
-
+  const generateQR = useCallback(() => {
+    if (!qrRef.current || !url || !qrScript || typeof window === 'undefined' || !window.QRCode) {
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
@@ -49,71 +65,61 @@ const StyledQR = forwardRef(({
       qrRef.current.innerHTML = '';
 
       const currentTheme = themeStyles[theme] || themeStyles.classic;
-      
-      // Apply brand style modifications
-      let dotsOptions = { ...currentTheme.dotsOptions };
-      let backgroundOptions = { ...currentTheme.backgroundOptions };
-      
-      if (brandStyle === 'integrated') {
-        dotsOptions.gradient = currentTheme.dotsOptions.gradient;
-        backgroundOptions.gradient = currentTheme.backgroundOptions.gradient;
-      } else if (brandStyle === 'overlay') {
-        dotsOptions = { ...dotsOptions, gradient: undefined };
-      }
+      const qrSize = Math.min(size, 300);
 
-      const qrOptions = {
-        width: getResponsiveSize(),
-        height: getResponsiveSize(),
-        data: url,
-        margin: margin,
-        qrOptions: {
-          typeNumber: 0,
-          mode: 'Byte',
-          errorCorrectionLevel: errorCorrectionLevel
-        },
-        imageOptions: {
-          hideBackgroundDots: true,
-          imageSize: logoImage ? 0.3 : 0,
-          crossOrigin: 'anonymous',
-          margin: 6
-        },
-        dotsOptions,
-        cornersSquareOptions: currentTheme.cornersSquareOptions,
-        cornersDotOptions: currentTheme.cornersDotOptions,
-        backgroundOptions
-      };
-
-      if (logoImage) {
-        qrOptions.image = logoImage;
-      }
-
-      qrInstance.current = new QRCodeStyling(qrOptions);
-
-      await new Promise((resolve, reject) => {
-        try {
-          qrInstance.current.append(qrRef.current);
-          setTimeout(() => {
-            const canvas = qrRef.current?.querySelector('canvas');
-            if (canvas) resolve();
-            else reject(new Error('Failed to generate QR code canvas'));
-          }, 100);
-        } catch (err) {
-          reject(err);
-        }
+      const qrcode = new window.QRCode(qrRef.current, {
+        text: url,
+        width: qrSize,
+        height: qrSize,
+        colorDark: currentTheme.colorDark,
+        colorLight: currentTheme.colorLight,
+        correctLevel: window.QRCode.CorrectLevel.H
       });
+
+      setTimeout(() => {
+        const canvas = qrRef.current?.querySelector('canvas');
+        if (canvas) {
+          canvasRef.current = canvas;
+          
+          if (logoImage) {
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            
+            img.onload = () => {
+              const logoSize = canvas.width * 0.2;
+              const x = (canvas.width - logoSize) / 2;
+              const y = (canvas.height - logoSize) / 2;
+              
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(x - 5, y - 5, logoSize + 10, logoSize + 10);
+              ctx.drawImage(img, x, y, logoSize, logoSize);
+              setIsLoading(false);
+            };
+            
+            img.onerror = () => {
+              setIsLoading(false);
+            };
+            
+            img.src = logoImage;
+          } else {
+            setIsLoading(false);
+          }
+        } else {
+          setIsLoading(false);
+        }
+      }, 100);
 
     } catch (err) {
       console.error('QR generation failed:', err);
       setError('Failed to generate QR code');
-    } finally {
       setIsLoading(false);
     }
-  }, [url, theme, brandStyle, logoImage, size, errorCorrectionLevel, margin]);
+  }, [url, theme, logoImage, size, qrScript]);
 
-  // Expose methods to parent component
   useImperativeHandle(ref, () => ({
     download: (filename) => {
-      const canvas = qrRef.current?.querySelector('canvas');
+      const canvas = canvasRef.current;
       if (!canvas) return false;
       try {
         const pngUrl = canvas.toDataURL('image/png', 1.0);
@@ -129,27 +135,18 @@ const StyledQR = forwardRef(({
         return false;
       }
     },
-    getCanvas: () => qrRef.current?.querySelector('canvas'),
+    getCanvas: () => canvasRef.current,
     regenerate: () => generateQR()
   }));
 
-  // ✅ Cleaned useEffect
   useEffect(() => {
-    generateQR();
-    const node = qrRef.current;
-    return () => {
-      if (node) node.innerHTML = "";
-    };
-  }, [generateQR]);
+    if (qrScript) {
+      generateQR();
+    }
+  }, [generateQR, qrScript]);
 
   const getThemeDisplayName = (themeName) => {
-    const themeNames = {
-      classic: 'Professional Classic',
-      funky: 'Vibrant Funky',
-      elegant: 'Sophisticated Elegant',
-      branded: 'Corporate Branded'
-    };
-    return themeNames[themeName] || themeName;
+    return themeStyles[themeName]?.name || themeName;
   };
 
   if (error) {
@@ -169,9 +166,17 @@ const StyledQR = forwardRef(({
     );
   }
 
+  if (!qrScript) {
+    return (
+      <div className="text-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-3 border-blue-600 border-t-transparent mx-auto"></div>
+        <p className="text-gray-600 text-sm mt-2">Loading QR generator...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="text-center max-w-full">
-      {/* Restaurant Name Header */}
       <div className="mb-4 sm:mb-6 p-4 bg-gradient-to-r from-gray-50 to-white rounded-lg border">
         <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2">
           {restaurantName}
@@ -186,7 +191,6 @@ const StyledQR = forwardRef(({
         </div>
       </div>
 
-      {/* QR Code Container */}
       <div className="relative inline-block max-w-full">
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 rounded-xl z-10">
@@ -199,7 +203,7 @@ const StyledQR = forwardRef(({
         
         <div 
           ref={qrRef} 
-          className="bg-white p-6 rounded-2xl shadow-xl border-2 border-gray-100 transition-all duration-300 max-w-full overflow-hidden hover:shadow-2xl"
+          className="bg-white p-6 rounded-2xl shadow-xl border-2 border-gray-100 transition-all duration-300 max-w-full overflow-hidden hover:shadow-2xl inline-block"
           style={{ 
             opacity: isLoading ? 0.5 : 1,
             background: brandStyle === 'integrated' 
@@ -208,13 +212,11 @@ const StyledQR = forwardRef(({
           }}
         />
         
-        {/* Brand badge */}
         <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs px-3 py-1 rounded-full shadow-lg">
           Branded
         </div>
       </div>
 
-      {/* QR Code Info */}
       <div className="mt-4 sm:mt-6 text-xs text-gray-500 max-w-full px-2">
         <div className="bg-gradient-to-r from-gray-50 to-white p-4 rounded-xl border border-gray-200 text-left">
           <p className="text-center mb-3 text-sm font-medium text-gray-700">
@@ -228,7 +230,6 @@ const StyledQR = forwardRef(({
         </div>
       </div>
 
-      {/* Print-friendly styling */}
       <style jsx>{`
         @media print {
           .text-gray-600,

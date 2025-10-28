@@ -4,6 +4,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 function MenuManagement() {
+
+
+
+
   
           const [items, setItems] = useState([]);
           const [token, setToken] = useState("");
@@ -96,6 +100,19 @@ function MenuManagement() {
               .includes(search.toLowerCase());
             return matchesCategory && matchesSearch;
           });
+
+          // when editingItem changes, update form fields
+const [name, setName] = useState("");
+const [description, setDescription] = useState("");
+
+// when editingItem changes, update form fields
+useEffect(() => {
+  if (editingItem) {
+    setName(editingItem.name || "");
+    setDescription(editingItem.description || "");
+  }
+}, [editingItem]);
+
         
           return (
             <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -372,7 +389,9 @@ function MenuManagement() {
                           className="w-full px-3 py-2 border-2 border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
                         />
                       </div>
-        
+
+
+
                       <div className="md:col-span-2">
                         <label className="flex items-center">
                           <input
@@ -384,6 +403,7 @@ function MenuManagement() {
                           <span className="ml-2 text-sm text-slate-700">Mark as Bestseller 🔥</span>
                         </label>
                       </div>
+
         
                       <div className="md:col-span-2 flex gap-4">
                         <button
@@ -662,6 +682,33 @@ function MenuManagement() {
                     <span className="ml-2 text-sm text-slate-700">Mark as Bestseller 🔥</span>
                   </label>
                 </div>
+
+
+
+                      {/* testing */}
+                      <div className="md:col-span-2">
+  <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
+  <textarea
+    name="description"
+    value={description}
+    onChange={(e) => setDescription(e.target.value)}
+    rows={3}
+    className="w-full px-3 py-2 border-2 border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
+  />
+</div>
+
+<div>
+  <label className="block text-sm font-medium text-slate-700 mb-2">Item Name</label>
+  <input
+    type="text"
+    name="name"
+    value={name}
+    onChange={(e) => setName(e.target.value)}
+    required
+    className="w-full px-3 py-2 border-2 border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+  />
+</div>
+        {/* testing */}
         
                 <div className="md:col-span-2 flex gap-4">
                   <button
