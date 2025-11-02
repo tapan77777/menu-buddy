@@ -8,7 +8,7 @@ export default function HomeIconButton() {
 
   return (
     <div
-      onClick={() => router.push('/explore')}
+      onClick={() => router.push('/')}
       className="fixed top-4 right-4 bg-white text-black p-2 rounded-full shadow-md hover:bg-gray-100 z-50"
       title="Go to MenuBuddy Home"
     >
