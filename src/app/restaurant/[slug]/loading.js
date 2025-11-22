@@ -1,7 +1,6 @@
 // /app/restaurant/[slug]/loading.js
 "use client";
 
-import logo from "@/public/menubuddy-logo.png"; // <-- put logo into /public and rename
 import Image from "next/image";
 
 export default function Loading() {
@@ -17,15 +16,8 @@ export default function Loading() {
 
       {/* MAIN LOGO */}
       <div className="relative z-20 animate-float">
-        <Image
-          src={logo}
-          alt="MenuBuddy Logo"
-          width={200}
-          height={200}
-          className="drop-shadow-xl rounded-xl"
-          priority
-        />
-      </div>
+      <Image src="/menubuddy-logo.png" width={200} height={200} alt="MenuBuddy Logo" />
+
 
       {/* TITLE */}
       <h1 className="mt-6 text-2xl font-bold text-white drop-shadow-lg animate-fadeIn">
