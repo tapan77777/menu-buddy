@@ -79,7 +79,7 @@ export default function MenuBuddyLanding() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              The Problem We're Solving
+              The Problem We are Solving
             </h2>
             <p className="text-xl text-gray-600">
               Busy food streets, endless options, but no clarity
@@ -612,7 +612,7 @@ export default function MenuBuddyLanding() {
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-orange-600 to-orange-700 text-white">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl font-bold mb-6">
-            Ready to Transform Your Restaurant's Digital Presence?
+            Ready to Transform Your Restaurants Digital Presence?
           </h2>
           <p className="text-xl mb-8 text-orange-100">
             Join hundreds of restaurants already using MenuBuddy to attract more customers
@@ -697,7 +697,7 @@ function TestimonialCard({ quote, author, restaurant }) {
           <Star key={i} className="text-yellow-500 fill-current" size={20} />
         ))}
       </div>
-      <p className="text-gray-700 mb-4 italic">"{quote}"</p>
+      <p className="text-gray-700 mb-4 italic">{quote}</p>
       <div>
         <p className="font-semibold text-gray-900">{author}</p>
         <p className="text-gray-600 text-sm">{restaurant}</p>
