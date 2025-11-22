@@ -205,52 +205,68 @@ export default function RestaurantProfileHero({ restaurant }) {
               </div>
 
               {/* right: action buttons */}
-              <div className="flex items-center gap-3">
-                {/* Change Photo */}
-                <label
-                  className={`${glowBtn} ${glowBg} bg-violet-600 hover:bg-violet-700 before:bg-violet-400/60`}
-                  style={{ boxShadow: "0 8px 30px rgba(99, 102, 241, 0.25)" }}
-                >
-                  <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" disabled={uploading || processing} />
-                  <span className="flex items-center gap-2">
-                    {uploading ? (
-                      <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="white" strokeWidth="3" strokeDasharray="60" strokeLinecap="round" fill="none"></circle></svg>
-                    ) : null}
-                    <span>{uploading ? "Uploading..." : "Change Photo"}</span>
-                  </span>
-                </label>
+              {/* right: action buttons */}
+<div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
 
-                {/* Edit name */}
-                {!editing ? (
-                  <button
-                    className={`${glowBtn} ${glowBg} bg-black text-indigo-700 hover:translate-y-[-2px] before:bg-white/30`}
-                    onClick={() => setEditing(true)}
-                    disabled={uploading || processing}
-                    style={{ padding: "10px 16px" }}
-                  >
-                    Edit Name
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2 bg-white/10 p-2 rounded-md">
-                    <input
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="rounded-md px-3 py-2 text-black"
-                      placeholder="Restaurant name"
-                    />
-                    <button
-                      onClick={saveName}
-                      disabled={saving}
-                      className="px-3 py-2 bg-emerald-500 text-white rounded-md"
-                    >
-                      {saving ? "Saving..." : "Save"}
-                    </button>
-                    <button onClick={() => { setEditing(false); setName(restaurant?.name || ""); }} className="px-3 py-2 bg-black/80 rounded-md">
-                      Cancel
-                    </button>
-                  </div>
-                )}
-              </div>
+  {/* Change Photo */}
+  <label
+    className={`${glowBtn} ${glowBg} bg-violet-600 hover:bg-violet-700 before:bg-violet-400/60 w-full sm:w-auto justify-center`}
+    style={{ boxShadow: "0 8px 30px rgba(99, 102, 241, 0.25)" }}
+  >
+    <input
+      type="file"
+      accept="image/*"
+      onChange={handleImageChange}
+      className="hidden"
+      disabled={uploading || processing}
+    />
+    <span className="flex items-center gap-2">
+      {uploading && (
+        <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="3" strokeDasharray="60" strokeLinecap="round" fill="none"></circle>
+        </svg>
+      )}
+      {uploading ? "Uploading..." : "Change Photo"}
+    </span>
+  </label>
+
+  {/* Edit name */}
+  {!editing ? (
+    <button
+      className={`${glowBtn} ${glowBg} bg-black text-white hover:translate-y-[-2px] before:bg-white/30 w-full sm:w-auto`}
+      onClick={() => setEditing(true)}
+      disabled={uploading || processing}
+      style={{ padding: "10px 16px" }}
+    >
+      Edit Name
+    </button>
+  ) : (
+    <div className="flex flex-col sm:flex-row items-center gap-2 bg-white/10 p-3 rounded-md w-full sm:w-auto">
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        className="rounded-md px-3 py-2 text-black w-full sm:w-64"
+        placeholder="Restaurant name"
+      />
+
+      <button
+        onClick={saveName}
+        disabled={saving}
+        className="px-3 py-2 bg-emerald-500 text-white rounded-md w-full sm:w-auto"
+      >
+        {saving ? "Saving..." : "Save"}
+      </button>
+
+      <button
+        onClick={() => { setEditing(false); setName(restaurant?.name || ""); }}
+        className="px-3 py-2 bg-black/80 text-white rounded-md w-full sm:w-auto"
+      >
+        Cancel
+      </button>
+    </div>
+  )}
+</div>
+
             </div>
           </div>
         </div>
