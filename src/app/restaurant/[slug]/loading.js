@@ -16,8 +16,9 @@ export default function Loading() {
 
       {/* MAIN LOGO */}
       <div className="relative z-20 animate-float">
-      <Image src="/menubuddy-logo.png" width={200} height={200} alt="MenuBuddy Logo" />
+       <Image src="/menubuddy-logo.png" width={200} height={200} alt="MenuBuddy Logo" />
 
+      </div>
 
       {/* TITLE */}
       <h1 className="mt-6 text-2xl font-bold text-white drop-shadow-lg animate-fadeIn">
