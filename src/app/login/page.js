@@ -127,7 +127,7 @@ export default function LoginPage() {
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-slate-900 placeholder-slate-400"
                   />
                 </div>
-route.push
+
                 <div>
                   <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-2">
                     Password

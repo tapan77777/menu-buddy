@@ -1,6 +1,4 @@
 
-
-// src/app/explore/page.js
 export const revalidate = 60;
 
 import ClientHomePage from '@/components/ClientHomepage';

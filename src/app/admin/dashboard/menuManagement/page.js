@@ -2,7 +2,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-
+import RestaurantProfileSettings from "../RestaurantProfileSettings.jsx";
 function MenuManagement() {
 
 
@@ -42,25 +42,24 @@ function MenuManagement() {
             }
           }, []);
         
-          const fetchMenuItems = async (token) => {
-            try {
-              const res = await fetch("/api/menu", {
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              const data = await res.json();
-        
-              if (data.success) {
-                setItems(data.items);
-                if (data.restaurant) {
-                  setRestaurant(data.restaurant);
-                }
-              } else {
-                alert("Failed to load menu items");
-              }
-            } catch (err) {
-              console.error("Fetch error:", err);
-            }
-          };
+         const fetchMenuItems = async (token) => {
+  try {
+    const res = await fetch("/api/menu", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      setItems(data.items);
+      if (data.restaurant) {
+        setRestaurant(data.restaurant);
+      }
+    }
+  } catch (err) {
+    console.error("Fetch error:", err);
+  }
+};
+
         
           const deleteItem = async (id) => {
             const res = await fetch(`/api/menu/${id}`, {
@@ -149,10 +148,18 @@ useEffect(() => {
         
               {/* Main Content */}
               <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+                {restaurant ? (
+  <RestaurantProfileSettings restaurant={restaurant} />
+) : (
+  <p className="text-slate-500">Loading restaurant...</p>
+)}
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         
-               
+               {/* Profile Section */}
+
+
 
         
                   <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
@@ -168,6 +175,8 @@ useEffect(() => {
                       </div>
                     </div>
                   </div>
+
+
         
                   <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
                     <div className="flex items-center">

@@ -1,6 +1,7 @@
 import { verifyToken } from "@/lib/auth";
 import { connectToDB } from "@/lib/db";
 import MenuItem from "@/models/menuItem";
+import Restaurant from "@/models/resturant";
 
 export async function POST(req) {
   try {
@@ -40,9 +41,15 @@ export async function GET(req) {
 
     await connectToDB();
 
+    // Fetch menu items
     const items = await MenuItem.find({ restaurantId: decoded.id });
 
-    return Response.json({ success: true, items });
+    // Fetch restaurant details
+    const restaurant = await Restaurant.findById(decoded.id).select(
+      "_id name address logoUrl slug"
+    );
+
+    return Response.json({ success: true, items, restaurant });
   } catch (err) {
     console.error("Menu Fetch Error:", err);
     return Response.json({ error: "Failed to fetch menu" }, { status: 500 });
