@@ -1,7 +1,7 @@
 
 export const revalidate = 60;
 
-import ClientHomePage from '@/components/ClientHomepage';
+import LandingPage from '@/components/LandingPage';
 
 export async function generateMetadata() {
   return {
@@ -59,7 +59,7 @@ export default async function ExplorePage() {
   }
 
   return (
-    <ClientHomePage 
+    <LandingPage 
       initialRestaurants={restaurants} 
       initialError={error}
     />
