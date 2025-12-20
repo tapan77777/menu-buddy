@@ -1,7 +1,7 @@
-import { notifyAdmin, notifyCustomer } from "@/app/lib/orderEvents";
-import { connectToDB } from "@/lib/db";
-import Order from "@/models/Order";
 import { NextResponse } from "next/server";
+import { connectToDB } from "../../../lib/db";
+import { notifyAdmin, notifyCustomer } from "../../../lib/orderEvents";
+import Order from "../../../models/Order";
 
 export async function POST(req) {
   try {
