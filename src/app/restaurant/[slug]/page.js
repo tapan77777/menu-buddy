@@ -17,5 +17,12 @@ export default async function RestaurantPage({ params }) {
 
   if (!success) return <p className="text-center mt-10">Failed to load restaurant</p>;
 
-  return <MenuList items={items} restaurant={restaurant} />;
+  return (
+  <MenuList 
+    items={items} 
+    restaurant={restaurant} 
+    restaurantId={restaurant?._id} 
+  />
+)
+
 }

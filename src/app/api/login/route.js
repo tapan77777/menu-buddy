@@ -22,21 +22,28 @@ export async function POST(req) {
       return Response.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    const token = jwt.sign(
-      { id: user._id, slug: user.slug },
-      JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+  const token = jwt.sign(
+  { 
+    id: user._id, 
+    slug: user.slug,
+    restaurantId: user._id     // THIS IS THE MISSING PART
+  },
+  JWT_SECRET,
+  { expiresIn: "7d" }
+);
+
 
     return Response.json({
       success: true,
       token,
       user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        slug: user.slug
-      }
+  id: user._id,
+  name: user.name,
+  email: user.email,
+  slug: user.slug,
+  restaurantId: user._id
+}
+
     });
 
   } catch (err) {

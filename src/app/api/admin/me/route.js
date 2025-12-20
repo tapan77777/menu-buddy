@@ -1,31 +1,36 @@
+import { verifyToken } from "@/lib/auth";
 import { connectToDB } from "@/lib/db";
 import Restaurant from "@/models/resturant";
-import jwt from "jsonwebtoken";
-
-const JWT_SECRET = process.env.JWT_SECRET;
+import { NextResponse } from "next/server";
 
 export async function GET(req) {
-  const authHeader = req.headers.get("authorization");
-
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
-  }
-
-  const token = authHeader.split(" ")[1];
-
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-
     await connectToDB();
-    const user = await Restaurant.findById(decoded.id).select("_id name email slug");
 
-    if (!user) {
-      return new Response(JSON.stringify({ error: "User not found" }), { status: 404 });
+    const decoded = verifyToken(req);  // reads JWT
+    if (!decoded) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    return new Response(JSON.stringify({ user }), { status: 200 });
+    const admin = await Restaurant.findById(decoded.id).lean();
+
+    if (!admin) {
+      return NextResponse.json({ success: false, error: "Admin not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      admin: {
+        id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        slug: admin.slug,
+        restaurantId: admin._id
+      }
+    });
+
   } catch (err) {
     console.error(err);
-    return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401 });
+    return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
   }
 }
