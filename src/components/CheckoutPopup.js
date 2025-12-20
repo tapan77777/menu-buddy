@@ -17,67 +17,85 @@ export default function CheckoutPopup({
   const [status, setStatus] = useState("pending");
   const [minimized, setMinimized] = useState(false);
   const [extraItems, setExtraItems] = useState([]);
+  const [selectedTable, setSelectedTable] = useState(tableId || null);
+
 
   // ------------------------------------------------------------
   // 1️⃣ Restore active order (persistent popup)
   // ------------------------------------------------------------
-  useEffect(() => {
-    const savedOrderId = localStorage.getItem(ACTIVE_ORDER_KEY);
-    const savedStatus = localStorage.getItem(ACTIVE_STATUS_KEY);
+useEffect(() => {
+  const savedOrderId = localStorage.getItem(ACTIVE_ORDER_KEY);
+  const savedStatus = localStorage.getItem(ACTIVE_STATUS_KEY);
 
-    if (savedOrderId) {
-      setView("tracking");
-      setOrder({ _id: savedOrderId });
-      setStatus(savedStatus || "pending");
-    }
-  }, []);
+  // 🔥 DO NOT restore finished orders
+  if (
+    savedOrderId &&
+    !["completed", "rejected"].includes(savedStatus)
+  ) {
+    setView("tracking");
+    setOrder({ _id: savedOrderId, orderId: savedOrderId });
+    setStatus(savedStatus || "pending");
+  } else {
+    // 🔥 Cleanup just in case
+    localStorage.removeItem(ACTIVE_ORDER_KEY);
+    localStorage.removeItem(ACTIVE_STATUS_KEY);
+  }
+}, []);
 
   // ------------------------------------------------------------
   // 2️⃣ Place Order
   // ------------------------------------------------------------
-  async function placeOrder() {
-    setView("placing");
+async function placeOrder() {
+  // 🔥 restore device session
+  const deviceSessionId = getOrCreateDeviceId();
 
-    const deviceSessionId = getOrCreateDeviceId();
-    const totalAmount = cartItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
+  // 🔥 clear old active order (important while testing)
+  localStorage.removeItem(ACTIVE_ORDER_KEY);
+  localStorage.removeItem(ACTIVE_STATUS_KEY);
 
-    const payload = {
-      restaurantId,
-      tableId,
-      deviceSessionId,
-      totalAmount,
-      items: cartItems.map((i) => ({
-        name: i.name,
-        price: i.price,
-        qty: i.quantity,
-        itemId: i._id,
-      })),
-    };
+  setView("placing");
 
-    const res = await fetch("/api/order/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+  const totalAmount = cartItems.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
 
-    const data = await res.json();
+  const payload = {
+    restaurantId,
+    tableId: selectedTable, // ✅ table now works
+    deviceSessionId,        // ✅ now defined
+    totalAmount,
+    items: cartItems.map((i) => ({
+      name: i.name,
+      price: i.price,
+      qty: i.quantity,
+      itemId: i._id,
+    })),
+  };
 
-    if (!data.success) {
-      alert("Failed to place order");
-      setView("review");
-      return;
-    }
+  const res = await fetch("/api/order/create", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
 
-    setOrder(data.order);
-    setStatus(data.order.status);
-    setView("tracking");
+  const data = await res.json();
 
-    localStorage.setItem(ACTIVE_ORDER_KEY, data.order._id);
-    localStorage.setItem(ACTIVE_STATUS_KEY, data.order.status);
+  if (!data.success) {
+    alert("Failed to place order");
+    setView("review");
+    return;
   }
+
+  setOrder(data.order);
+  setStatus(data.order.status);
+  setView("tracking");
+
+  localStorage.setItem(ACTIVE_ORDER_KEY, data.order._id);
+  localStorage.setItem(ACTIVE_STATUS_KEY, data.order.status);
+}
+
+
 
   // ------------------------------------------------------------
   // 3️⃣ SSE — Live Order Status (NO AUTO CLOSE)
@@ -105,25 +123,34 @@ export default function CheckoutPopup({
   // ------------------------------------------------------------
   if (minimized && order) {
     return (
-      <div
-        className="fixed bottom-5 right-5 bg-green-600 text-white px-4 py-3 rounded-full shadow-xl cursor-pointer animate-pulse z-[9999]"
-        onClick={() => setMinimized(false)}
-      >
-        🔔 Order {order._id} — {status.toUpperCase()}
-      </div>
+     <div
+  className="fixed bottom-5 right-5 bg-green-600 text-white px-4 py-3 rounded-full shadow-xl cursor-pointer animate-pulse z-[9999]"
+  onClick={() => setMinimized(false)}
+>
+  🔔 Order {order?._id} — {typeof status === "string" ? status.toUpperCase() : ""}
+</div>
+
     );
   }
 
   // ------------------------------------------------------------
   // 5️⃣ Close Handler (user-controlled)
   // ------------------------------------------------------------
-  function handleClose() {
-    if (["completed", "rejected"].includes(status)) {
-      localStorage.removeItem(ACTIVE_ORDER_KEY);
-      localStorage.removeItem(ACTIVE_STATUS_KEY);
-    }
-    onClose();
+function handleClose() {
+  if (["completed", "rejected"].includes(status)) {
+    // 🔥 Clear persisted order
+    localStorage.removeItem(ACTIVE_ORDER_KEY);
+    localStorage.removeItem(ACTIVE_STATUS_KEY);
+
+    // 🔥 Reset popup state so new order is allowed
+    setOrder(null);
+    setStatus("pending");
+    setView("review");
   }
+
+  onClose();
+}
+
 
   // ------------------------------------------------------------
   // MAIN POPUP UI
@@ -149,79 +176,139 @@ export default function CheckoutPopup({
         </button>
 
 {/* REVIEW */}
-        {view === "review" && (
-          <div className="flex flex-col h-full max-h-[80vh]">
-            {/* Header - Fixed */}
-            <div className="mb-4 text-center flex-shrink-0">
-              <div className="inline-block">
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                  Review Your Order
-                </h2>
-                <div className="h-1 w-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full mx-auto mt-2"></div>
-              </div>
-              <p className="text-sm text-gray-500 mt-3">
-                Please verify your items before confirming
-              </p>
-            </div>
+{view === "review" && (
+  <div className="flex flex-col h-full max-h-[80vh]">
+    {/* Header - Fixed */}
+    <div className="mb-4 text-center flex-shrink-0">
+      <div className="inline-block">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+          Review Your Order
+        </h2>
+        <div className="h-1 w-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full mx-auto mt-2"></div>
+      </div>
+      <p className="text-sm text-gray-500 mt-3">
+        Please verify your items before confirming
+      </p>
+    </div>
 
-            {/* Scrollable Cart Items Card */}
-            <div className="flex-1 overflow-y-auto mb-4 pr-1" style={{scrollbarWidth: 'thin'}}>
-              <div className="bg-gradient-to-br from-white to-gray-50 rounded-3xl p-5 shadow-lg border border-gray-100 relative overflow-hidden">
-                {/* Decorative elements */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-green-100 rounded-full opacity-20 -mr-16 -mt-16"></div>
-                
-                <div className="space-y-3">
-                  {cartItems.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="flex justify-between items-center py-3 px-4 bg-white rounded-2xl border border-gray-100 hover:border-green-200 hover:shadow-md transition-all duration-300 group"
-                    >
-                      <div className="flex items-center gap-3">
-                        {/* Item indicator */}
-                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
-                          <span className="text-lg">🍽️</span>
-                        </div>
-                        <div>
-                          <span className="font-semibold text-gray-800 block">{item.name}</span>
-                          <span className="text-xs text-gray-500">Quantity: {item.quantity}</span>
-                        </div>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <span className="font-bold text-green-600 text-lg">₹{item.price * item.quantity}</span>
-                        <div className="text-xs text-gray-400">₹{item.price} each</div>
-                      </div>
-                    </div>
-                  ))}
+    {/* Scrollable Cart Items Card */}
+    <div
+      className="flex-1 overflow-y-auto mb-4 pr-1"
+      style={{ scrollbarWidth: "thin" }}
+    >
+      <div className="bg-gradient-to-br from-white to-gray-50 rounded-3xl p-5 shadow-lg border border-gray-100 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-green-100 rounded-full opacity-20 -mr-16 -mt-16"></div>
+
+        <div className="space-y-3">
+          {cartItems.map((item, idx) => (
+            <div
+              key={idx}
+              className="flex justify-between items-center py-3 px-4 bg-white rounded-2xl border border-gray-100 hover:border-green-200 hover:shadow-md transition-all duration-300 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+                  <span className="text-lg">🍽️</span>
                 </div>
-
-                {/* Total Section */}
-                <div className="mt-5 pt-4 border-t-2 border-dashed border-gray-200 bg-white rounded-xl -mx-5 px-9 py-3 sticky bottom-0">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-bold text-gray-700">Total Amount</span>
-                    <span className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                      ₹{cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}
-                    </span>
-                  </div>
+                <div>
+                  <span className="font-semibold text-gray-800 block">
+                    {item.name}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    Quantity: {item.quantity}
+                  </span>
                 </div>
               </div>
-            </div>
-
-            {/* Confirm Button - Fixed at bottom */}
-            <div className="flex-shrink-0">
-              <button
-                onClick={placeOrder}
-                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 py-4 rounded-2xl text-white font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 relative overflow-hidden group"
-              >
-                <span className="relative z-10 flex items-center justify-center gap-2">
-                  <span>Confirm Order</span>
-                  <span className="text-xl group-hover:scale-110 transition-transform">✓</span>
+              <div className="text-right flex-shrink-0">
+                <span className="font-bold text-green-600 text-lg">
+                  ₹{item.price * item.quantity}
                 </span>
-                {/* Shimmer effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20 group-hover:animate-shimmer"></div>
-              </button>
+                <div className="text-xs text-gray-400">
+                  ₹{item.price} each
+                </div>
+              </div>
             </div>
+          ))}
+        </div>
+
+        {/* Total */}
+        <div className="mt-5 pt-4 border-t-2 border-dashed border-gray-200 bg-white rounded-xl -mx-5 px-9 py-3 sticky bottom-0">
+          <div className="flex justify-between items-center">
+            <span className="text-lg font-bold text-gray-700">
+              Total Amount
+            </span>
+            <span className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+              ₹
+              {cartItems.reduce(
+                (sum, item) =>
+                  sum + item.price * item.quantity,
+                0
+              )}
+            </span>
           </div>
-        )}
+        </div>
+      </div>
+    </div>
+
+    {/* TABLE SELECTION (ALWAYS VISIBLE + EDITABLE) */}
+    <div className="mb-4">
+      <p className="text-sm font-semibold text-gray-600 mb-2">
+        Select your table number
+      </p>
+
+      {selectedTable && (
+        <div className="mb-2 text-sm text-green-700 font-semibold flex items-center justify-between">
+          <span>Selected Table: {selectedTable}</span>
+          <button
+            onClick={() => setSelectedTable(null)}
+            className="text-xs text-gray-500 underline"
+          >
+            Change
+          </button>
+        </div>
+      )}
+
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        {Array.from({ length: 20 }, (_, i) => i + 1).map((num) => (
+          <button
+            key={num}
+            onClick={() => setSelectedTable(num)}
+            className={`min-w-[48px] h-12 rounded-xl border font-bold transition-all
+              ${
+                selectedTable === num
+                  ? "bg-green-600 text-white border-green-600"
+                  : "bg-white text-gray-700 border-gray-200 hover:border-green-400"
+              }
+            `}
+          >
+            {num}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    {/* Confirm Button */}
+    <div className="flex-shrink-0">
+      <button
+        onClick={placeOrder}
+        disabled={!selectedTable}
+        className={`w-full py-4 rounded-2xl text-white font-bold text-lg shadow-lg transition-all duration-300
+          ${
+            selectedTable
+              ? "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0"
+              : "bg-gray-400 cursor-not-allowed"
+          }
+        `}
+      >
+        <span className="relative z-10 flex items-center justify-center gap-2">
+          <span>Confirm Order</span>
+          <span className="text-xl">✓</span>
+        </span>
+      </button>
+    </div>
+  </div>
+)}
+
+
 
         {/* PLACING */}
         {view === "placing" && (
