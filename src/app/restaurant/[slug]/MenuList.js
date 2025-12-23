@@ -296,97 +296,115 @@ export default function MenuList({ restaurant, items = [], restaurantId }) {
           />
         )}
 
-        {/* Floating Cart Preview */}
-        {cartItems.length > 0 && !selectedItem && (
-          <>
-            {/* Swiggy/Zomato Style Floating Cart */}
-            <div
-              className="fixed bottom-6 right-4 sm:right-6 z-40 group cursor-pointer"
-              onClick={() => setShowCart(!showCart)}
+      {/* Floating Cart Preview */}
+{cartItems.length > 0 && !selectedItem && (
+  <>
+    {/* Professional Floating Cart Button */}
+    <div
+      className="fixed bottom-6 right-6 z-40 group cursor-pointer"
+      onClick={() => setShowCart(!showCart)}
+    >
+      {/* Main Cart Container */}
+      <div className="relative">
+        {/* Cart Button - Clean and Professional */}
+        <div className="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-green-500 dark:hover:border-green-500 text-gray-800 dark:text-white rounded-2xl px-5 py-3.5 flex items-center gap-3 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 ease-out min-w-[140px]">
+          {/* Cart Icon with Badge */}
+          <div className="relative">
+            <svg 
+              className="w-6 h-6 text-gray-700 dark:text-gray-200 transition-transform group-hover:scale-110" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
             >
-              {/* Main Cart Container */}
-              <div className="relative">
-                {/* Cart Button with Food Delivery Styling */}
-                <div className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 hover:from-orange-600 hover:via-red-600 hover:to-pink-600 text-white rounded-2xl px-4 py-3 flex items-center gap-2 shadow-2xl hover:shadow-orange-500/25 transform hover:scale-105 transition-all duration-300 ease-out min-w-[120px]">
-                  {/* Animated Cart Icon */}
-                  <div className="relative">
-                    <svg className="w-5 h-5 group-hover:animate-bounce" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M7 4V2C7 1.45 7.45 1 8 1H16C16.55 1 17 1.45 17 2V4H20C20.55 4 21 4.45 21 5S20.55 6 20 6H19V19C19 20.1 18.1 21 17 21H7C5.9 21 5 20.1 5 19V6H4C3.45 6 3 5.55 3 5S3.45 4 4 4H7ZM9 3V4H15V3H9ZM7 6V19H17V6H7Z"/>
-                      <circle cx="9" cy="9" r="1"/>
-                      <circle cx="15" cy="9" r="1"/>
-                      <circle cx="9" cy="15" r="1"/>
-                      <circle cx="15" cy="15" r="1"/>
-                    </svg>
-
-                    {/* Floating Items Animation */}
-                    {cartItems.length > 0 && (
-                      <div className="absolute -top-2 -right-2 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div>
-                    )}
-                  </div>
-
-                  {/* Cart Text & Count */}
-                  <div className="flex flex-col items-start leading-tight">
-                    <span className="text-xs font-medium opacity-90">Cart</span>
-                    <span className="text-sm font-bold">
-                      {cartItems.length > 0 ? `${cartItems.length} item${cartItems.length > 1 ? 's' : ''}` : 'Empty'}
-                    </span>
-                  </div>
-
-                  {/* Arrow Icon */}
-                  <svg className={`w-4 h-4 transition-transform duration-300 ${showCart ? 'rotate-180' : ''} group-hover:translate-x-1`} fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8.59 16.59L13.17 12L8.59 7.41L10 6L16 12L10 18L8.59 16.59Z"/>
-                  </svg>
-                </div>
-
-                {/* Pulsing Ring for Items */}
-                {cartItems.length > 0 && (
-                  <div className="absolute inset-0 rounded-2xl border-2 border-orange-400 animate-pulse opacity-60"></div>
-                )}
-
-                {/* Floating Notification Dots */}
-                {cartItems.length > 0 && (
-                  <>
-                    <div className="absolute -top-1 -left-1 w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0s'}}></div>
-                    <div className="absolute -bottom-1 -left-2 w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                    <div className="absolute top-2 -right-3 w-1 h-1 bg-purple-400 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
-                  </>
-                )}
-              </div>
-
-              {/* Quick Preview on Hover */}
-              <div className="absolute bottom-full right-0 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none transform translate-y-2 group-hover:translate-y-0">
-                <div className="bg-white text-gray-800 px-4 py-3 rounded-xl shadow-2xl border min-w-[200px]">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="font-semibold text-sm">Your Order</span>
-                  </div>
-                  <div className="text-xs text-gray-600">
-                    {cartItems.length > 0
-                      ? `${cartItems.length} delicious item${cartItems.length > 1 ? 's' : ''} waiting!`
-                      : 'Add items to get started'}
-                  </div>
-                  <div className="absolute top-full right-6 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white"></div>
-                </div>
-              </div>
-            </div>
-            {/* Swiggy/Zomato Style Floating Cart */}
-
-            {/* Slide-up Cart Popup */}
-            {showCart && (
-              <CartModal
-                className="overflow-y-auto max-h-[60vh] px-6 py-4"
-                cartItems={cartItems}
-                showCart={showCart}
-                setShowCart={setShowCart}
-                updateQuantity={updateQuantity}
-                setCartItems={setCartItems}
-                restaurantId={restaurantId}
-                tableId=""
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" 
               />
+            </svg>
+
+            {/* Item Count Badge */}
+            {cartItems.length > 0 && (
+              <div className="absolute -top-2 -right-2 min-w-[20px] h-5 bg-green-600 dark:bg-green-500 text-white text-xs font-bold rounded-full flex items-center justify-center px-1.5 shadow-md">
+                {cartItems.length > 99 ? '99+' : cartItems.length}
+              </div>
             )}
-          </>
+          </div>
+
+          {/* Cart Info */}
+          <div className="flex flex-col items-start leading-tight">
+            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+              View Cart
+            </span>
+            <span className="text-sm font-bold text-gray-900 dark:text-white">
+              {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}
+            </span>
+            <span className="text-xs font-medium text-white/80">
+              ₹{cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}
+            </span>
+          </div>
+
+          {/* Chevron Icon */}
+          <svg 
+            className={`w-5 h-5 text-gray-600 dark:text-gray-400 transition-transform duration-300 ${
+              showCart ? 'rotate-180' : ''
+            }`} 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              strokeWidth={2} 
+              d="M19 9l-7 7-7-7" 
+            />
+          </svg>
+        </div>
+
+        {/* Subtle pulse effect for new items */}
+        {cartItems.length > 0 && (
+          <div className="absolute inset-0 rounded-2xl bg-green-500 opacity-20 animate-ping pointer-events-none"></div>
         )}
+      </div>
+
+      {/* Hover Preview Tooltip */}
+      <div className="absolute bottom-full right-0 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none transform translate-y-2 group-hover:translate-y-0">
+        <div className="bg-gray-900 dark:bg-gray-700 text-white px-4 py-3 rounded-xl shadow-2xl min-w-[220px]">
+          <div className="flex items-center gap-2 mb-1.5">
+            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+            <span className="font-semibold text-sm">Your Cart</span>
+          </div>
+          <div className="text-xs text-gray-300">
+            {cartItems.length === 1 
+              ? '1 item ready to order' 
+              : `${cartItems.length} items ready to order`
+            }
+          </div>
+          {/* Tooltip arrow */}
+          <div className="absolute top-full right-8 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+        </div>
+      </div>
+    </div>
+
+    {/* Cart Modal */}
+    {showCart && (
+      <CartModal
+        className="overflow-y-auto max-h-[60vh] px-6 py-4"
+        cartItems={cartItems}
+        showCart={showCart}
+        setShowCart={setShowCart}
+        updateQuantity={updateQuantity}
+        setCartItems={setCartItems}
+        restaurantId={restaurantId}
+        tableId=""
+      />
+    )}
+  </>
+)}
       </main>
     </>
   );
 }
+onClose

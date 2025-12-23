@@ -118,21 +118,46 @@ async function placeOrder() {
     return () => stream.close();
   }, [order]);
 
-  // ------------------------------------------------------------
-  // 4️⃣ Minimized Floating Bubble
-  // ------------------------------------------------------------
-  if (minimized && order) {
-    return (
-     <div
-  className="fixed bottom-5 right-5 bg-green-600 text-white px-4 py-3 rounded-full shadow-xl cursor-pointer animate-pulse z-[9999]"
-  onClick={() => setMinimized(false)}
->
-  🔔 Order {order?._id} — {typeof status === "string" ? status.toUpperCase() : ""}
-</div>
+// ------------------------------------------------------------
+// 4️⃣ Minimized Floating Bubble
+// ------------------------------------------------------------
+if (minimized && order) {
+  return (
+    <div
+      className="fixed bottom-5 right-5 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-5 py-3 rounded-2xl shadow-2xl cursor-pointer hover:shadow-green-500/50 transform hover:scale-105 active:scale-95 transition-all duration-300 z-[9999] group"
+      onClick={() => setMinimized(false)}
+    >
+      <div className="flex items-center gap-3">
+        {/* Animated pulse indicator */}
+        <div className="relative flex items-center justify-center">
+          <div className="w-2.5 h-2.5 bg-white rounded-full animate-pulse"></div>
+          <div className="absolute w-2.5 h-2.5 bg-white rounded-full animate-ping"></div>
+        </div>
 
-    );
-  }
+        {/* Content */}
+        <div className="flex flex-col leading-tight">
+          <span className="text-xs font-medium opacity-90">Order #{order?._id?.slice(-6)}</span>
+          <span className="text-sm font-bold tracking-wide">
+            {typeof status === "string" ? status.toUpperCase() : "PENDING"}
+          </span>
+        </div>
 
+        {/* Expand icon */}
+        <svg 
+          className="w-4 h-4 opacity-80 group-hover:opacity-100 transition-opacity" 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+        </svg>
+      </div>
+
+      {/* Shine effect */}
+      <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none"></div>
+    </div>
+  );
+}
   // ------------------------------------------------------------
   // 5️⃣ Close Handler (user-controlled)
   // ------------------------------------------------------------
@@ -556,7 +581,7 @@ function handleClose() {
                     {status === "preparing" && "75%"}
                     {(status === "completed" || status === "rejected") && "100%"}
                     {!status && "25%"}
-                  </span>
+                  </span> 
                 </div>
                 <div className="h-3 w-full bg-gray-200 rounded-full overflow-hidden shadow-inner">
                   <div
