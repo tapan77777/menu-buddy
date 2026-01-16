@@ -65,7 +65,8 @@ export default function ClientHomePage({ initialRestaurants, initialError }) {
       {/* HEADER */}
       <Header />
 
-      <main className="p-4 sm:p-6 min-h-screen bg-gradient-to-br from-orange-50 via-pink-50 to-white relative">
+      <main className="px-4 sm:px-6 min-h-screen bg-gradient-to-br from-orange-50 via-pink-50 to-white relative">
+
         {/* Promotional Banner */}
         <div className="-mx-4 sm:-mx-6">
           <PromotionalBanner promo={promoData} />
