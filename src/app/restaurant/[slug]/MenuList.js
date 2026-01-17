@@ -31,7 +31,24 @@ export default function MenuList({ restaurant, items = [], restaurantId }) {
   const [cartItems, setCartItems] = useState([]);
   const [showImagePreview, setShowImagePreview] = useState(false);
 
+  useEffect(() => {
+    if (restaurant && restaurant._id) {
+      const viewedKey = `viewed-${restaurant._id}`;
 
+      if (!sessionStorage.getItem(viewedKey)) {
+        fetch("/api/track", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            restaurantId: restaurant._id,
+            type: "menu_viewed",
+          }),
+        }).catch(() => { /* ignore tracking errors */ });
+
+        sessionStorage.setItem(viewedKey, "true");
+      }
+    }
+  }, [restaurant && restaurant._id]);
 
   const debouncedSearch = useDebounce(searchQuery, 300);
 
@@ -63,7 +80,13 @@ export default function MenuList({ restaurant, items = [], restaurantId }) {
     });
   }, []);
 
+  const handleItemClick = (item) => {
+    if (!item) return;
 
+    
+
+    setSelectedItem(item);
+  };
 
   const calculateDiscount = (current, original) => {
     if (!original || original === 0) return 0;
@@ -132,7 +155,7 @@ export default function MenuList({ restaurant, items = [], restaurantId }) {
                 
                 {/* Restaurant Details */}
                 <div className="flex-1 min-w-0">
-                  <h1 className="text-2xl font-black text-gray-900 mb-1 bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-black">
+                  <h1 className="text-2xl font-black text-gray-900 mb-1 bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
                     {restaurant?.name ?? ''}
                   </h1>
                   <p className="text-sm text-gray-600 mb-3 line-clamp-1">{restaurant?.address ?? ''}</p>
@@ -193,8 +216,9 @@ export default function MenuList({ restaurant, items = [], restaurantId }) {
             </div>
           )}
 
-          {/* Category Filters */}
-          <div className="mb-4">
+          {/* Category Filters - Pill Style */}
+          <div className="mb-6">
+      
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
               {[
                 { id: 'all', label: 'All', emoji: '🍴' },
@@ -207,19 +231,20 @@ export default function MenuList({ restaurant, items = [], restaurantId }) {
                 <button
                   key={cat.id}
                   onClick={() => setFilter(cat.id)}
-                  className={`flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-300 whitespace-nowrap ${
+                  className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 whitespace-nowrap flex items-center gap-2 ${
                     filter === cat.id
-                      ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-md'
-                      : 'bg-white text-gray-600 border border-gray-200'
+                      ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg scale-105'
+                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-orange-300 hover:shadow-md'
                   }`}
                 >
-                  {cat.emoji} {cat.label}
+                  <span className="text-base">{cat.emoji}</span>
+                  {cat.label}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Single Column Compact Menu Items */}
+{/* Compact Menu Items */}
           <div className="space-y-3">
             {filteredItems.map((item, index) => (
               <div
@@ -230,11 +255,9 @@ export default function MenuList({ restaurant, items = [], restaurantId }) {
                 <div className="flex gap-3 p-3">
                   {/* Image Section */}
                   <div className="relative flex-shrink-0">
-                    <Image
+                    <img
                       src={item?.imageUrl ?? '/default-food.jpg'}
                       alt={item?.name ?? 'Item'}
-                      width={100}
-                      height={100}
                       className="w-24 h-24 object-cover rounded-xl"
                     />
                     
