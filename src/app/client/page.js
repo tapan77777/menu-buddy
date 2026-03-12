@@ -28,5 +28,7 @@ export default async function ClientPage() {
       initialRestaurants={restaurants}
       initialError={error}
     />
+    // minnor change
+    
   );
 }
