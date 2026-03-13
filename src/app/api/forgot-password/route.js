@@ -9,11 +9,13 @@ export async function POST(req) {
     await connectToDB();
 
     const user = await Restaurant.findOne({ email });
-    if (!user) return Response.json({ error: "No user found" }, { status: 404 });
 
-    // In production, you should generate a token + email it
-    console.log(`📧 Password reset requested for: ${email}`);
-    console.log(`🔗 Reset link (to build): /reset-password?email=${email}`);
+    // Always return success regardless of whether the email exists.
+    // Revealing "no user found" allows attackers to enumerate registered emails.
+    if (user) {
+      // TODO: generate a signed time-limited reset token and email it
+      console.log(`Password reset requested for: ${email}`);
+    }
 
     return Response.json({ success: true });
   } catch (err) {

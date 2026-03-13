@@ -22,16 +22,8 @@ export default function OrdersPage() {
   // Fetch admin restaurantId
   useEffect(() => {
     async function load() {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
       try {
-        const me = await fetch("/api/admin/me", {
-          headers: { Authorization: `Bearer ${token}` }
-        }).then(r => r.json());
+        const me = await fetch("/api/admin/me").then(r => r.json());
 
         if (me?.admin?.restaurantId) {
           setRestaurantId(me.admin.restaurantId);

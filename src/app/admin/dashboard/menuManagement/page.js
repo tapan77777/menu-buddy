@@ -10,7 +10,6 @@ function MenuManagement() {
 
   
           const [items, setItems] = useState([]);
-          const [token, setToken] = useState("");
           const [editingItem, setEditingItem] = useState(null);
           const [restaurant, setRestaurant] = useState(null);
           const [categoryFilter, setCategoryFilter] = useState("all");
@@ -21,39 +20,25 @@ function MenuManagement() {
         
           const router = useRouter();
         
-          useEffect(() => {
-            const token = localStorage.getItem("token");
-            if (!token) {
-              router.replace("/admin/login");
-            } else {
-              setLoading(false);
-            }
-          }, [router]);
-        
           const startEditing = (item) => {
             setEditingItem(item);
           };
-        
+
           useEffect(() => {
-            const storedToken = localStorage.getItem("token");
-            if (storedToken) {
-              setToken(storedToken);
-              fetchMenuItems(storedToken);
-            }
+            fetchMenuItems();
           }, []);
         
-         const fetchMenuItems = async (token) => {
+         const fetchMenuItems = async () => {
   try {
-    const res = await fetch("/api/menu", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await fetch("/api/menu");
+    if (res.status === 401) {
+      router.replace("/login");
+      return;
+    }
     const data = await res.json();
-
     if (data.success) {
       setItems(data.items);
-      if (data.restaurant) {
-        setRestaurant(data.restaurant);
-      }
+      if (data.restaurant) setRestaurant(data.restaurant);
     }
   } catch (err) {
     console.error("Fetch error:", err);
@@ -64,7 +49,6 @@ function MenuManagement() {
           const deleteItem = async (id) => {
             const res = await fetch(`/api/menu/${id}`, {
               method: "DELETE",
-              headers: { Authorization: `Bearer ${token}` },
             });
             const data = await res.json();
             if (data.success) {
@@ -72,10 +56,10 @@ function MenuManagement() {
             } else alert(data.error || "Delete failed");
           };
         
-          const handleLogout = () => {
+          const handleLogout = async () => {
             const confirmed = window.confirm("Are you sure you want to logout?");
             if (confirmed) {
-              localStorage.removeItem("token");
+              await fetch("/api/logout", { method: "POST" });
               window.location.href = "/login";
             }
           };
@@ -319,10 +303,7 @@ useEffect(() => {
         
                         const res = await fetch(`/api/menu/${editingItem._id}`, {
                           method: "PUT",
-                          headers: {
-                            "Content-Type": "application/json",
-                            Authorization: `Bearer ${token}`,
-                          },
+                          headers: { "Content-Type": "application/json" },
                           body: JSON.stringify(updatedItem),
                         });
         
@@ -599,10 +580,7 @@ useEffect(() => {
         
                     const res = await fetch("/api/menu", {
                       method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                      },
+                      headers: { "Content-Type": "application/json" },
                       body: JSON.stringify(newItem),
                     });
         

@@ -1,139 +1,151 @@
-'use client'
-import { useState } from 'react';
+'use client';
+
+import Image from 'next/image';
+
+const quickActions = [
+  {
+    label: 'Up to ₹200 OFF',
+    subtitle: 'On first order',
+    icon: '🏷️',
+    bg: 'bg-orange-50',
+    iconBg: 'bg-orange-100',
+    border: 'border-orange-100',
+  },
+  {
+    label: 'Fast Delivery',
+    subtitle: '15–30 mins',
+    icon: '⚡',
+    bg: 'bg-amber-50',
+    iconBg: 'bg-amber-100',
+    border: 'border-amber-100',
+  },
+  {
+    label: 'Top Rated',
+    subtitle: '4.5+ only',
+    icon: '⭐',
+    bg: 'bg-yellow-50',
+    iconBg: 'bg-yellow-100',
+    border: 'border-yellow-100',
+  },
+];
+
+const categories = [
+  { emoji: '🍕', label: 'Pizza' },
+  { emoji: '🍔', label: 'Burgers' },
+  { emoji: '🍜', label: 'Noodles' },
+  { emoji: '🥗', label: 'Healthy' },
+  { emoji: '🍗', label: 'Chicken' },
+  { emoji: '🍰', label: 'Desserts' },
+  { emoji: '🥤', label: 'Drinks' },
+  { emoji: '🍱', label: 'Combos' },
+];
 
 export default function PromotionalBanner({ promo }) {
-  const [activeSlide, setActiveSlide] = useState(0);
-
   if (!promo) return null;
 
-  const mainBanners = [
-    {
-      gradient: "from-orange-500 via-red-500 to-pink-500",
-      title: "JANTASTIC BITES",
-      subtitle: "Delicious meals delivered fast",
-      cta: "ORDER NOW",
-      icon: "🍔",
-      image: "/burger.jpg"
-    },
-    {
-      gradient: "from-purple-500 via-indigo-500 to-blue-500",
-      title: "FLAT ₹200 OFF",
-      subtitle: "On your first order",
-      cta: "CLAIM NOW",
-      icon: "🎉",
-      image: "/food.jpg"
-    }
-  ];
-
-  const quickActions = [
-    { label: "Flat ₹200 OFF", subtitle: "& More", icon: "💰", color: "bg-orange-100" },
-    { label: "Meals", subtitle: "At ₹99", icon: "🍱", color: "bg-yellow-100" },
-    { label: "Food In", subtitle: "10 Mins", icon: "⚡", color: "bg-green-100" }
-  ];
-
-  const restaurants = [
-    { name: "Pizza Palace", offer: "50% OFF", time: "25 mins", rating: "4.3", image: "/pizza.jpg" },
-    { name: "Burger King", offer: "₹100 OFF", time: "20 mins", rating: "4.5", image: "/burger.jpg" },
-    { name: "Chai Corner", offer: "40% OFF", time: "15 mins", rating: "4.2", image: "/chai.jpg" },
-    { name: "Biryani House", offer: "₹150 OFF", time: "30 mins", rating: "4.6", image: "/biryani.jpg" },
-    { name: "Dosa Point", offer: "35% OFF", time: "18 mins", rating: "4.4", image: "/dosa.jpg" }
-  ];
-
   return (
-    <section className="w-full relative overflow-hidden mx-0 my-0">
-      {/* Main Hero Banner */}
-      <div className="relative">
-        <div className={`w-full h-48 bg-gradient-to-r ${mainBanners[activeSlide].gradient} relative overflow-hidden`}>
-          {/* Animated background elements */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-4 right-8 text-6xl animate-bounce">{mainBanners[activeSlide].icon}</div>
-            <div className="absolute bottom-6 left-8 text-4xl animate-pulse">🍽️</div>
-            <div className="absolute top-1/2 right-1/4 text-5xl opacity-60">✨</div>
+    <section className="w-full">
+
+      {/* ── Hero Banner ── */}
+      <div className="relative h-60 sm:h-72 overflow-hidden">
+
+        {/* Background photo */}
+        <Image
+          src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200&q=80&fm=webp"
+          alt="Delicious food spread"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center scale-105 hover:scale-100 transition-transform duration-700"
+        />
+
+        {/* Depth gradient — dark bottom, lighter top */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/15" />
+        {/* Side vignette for warmth */}
+        <div className="absolute inset-0 bg-gradient-to-r from-orange-950/30 via-transparent to-transparent" />
+
+        {/* Content */}
+        <div className="relative z-10 h-full flex flex-col justify-between px-5 pt-5 pb-6">
+
+          {/* Top — glassmorphism pill badges */}
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-md text-white text-xs font-semibold px-3 py-1.5 rounded-full border border-white/25 shadow-sm">
+              ⚡ Fast Delivery
+            </span>
+            <span className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-md text-white text-xs font-semibold px-3 py-1.5 rounded-full border border-white/25 shadow-sm">
+              ⭐ Top Rated
+            </span>
+            <span className="inline-flex items-center gap-1.5 bg-orange-500/90 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
+              🏷️ Best Offers
+            </span>
           </div>
 
-          {/* Content */}
-          <div className="relative z-10 h-full flex items-center justify-between px-6">
-            <div className="flex-1">
-              <h1 className="text-3xl font-black text-white mb-2 leading-tight drop-shadow-lg">
-                {mainBanners[activeSlide].title}
-              </h1>
-              <p className="text-white/90 text-sm mb-4">{mainBanners[activeSlide].subtitle}</p>
-             
-            </div>
-            <div className="text-8xl opacity-90 animate-pulse">
-              {mainBanners[activeSlide].icon}
+          {/* Bottom — headline + stats */}
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-black text-white leading-[1.1] mb-1.5 drop-shadow-lg">
+              Discover Great Food
+              <span className="block text-orange-300 italic">Near You</span>
+            </h1>
+            <p className="text-white/75 text-sm font-medium mb-4 tracking-wide">
+              Scan menus, explore restaurants, and order instantly
+            </p>
+
+            {/* Stats row */}
+            <div className="flex gap-5">
+              <div className="flex items-center gap-1.5">
+                <span className="text-base">🕐</span>
+                <span className="text-white/90 text-xs font-semibold">15–30 min</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-base">🍽️</span>
+                <span className="text-white/90 text-xs font-semibold">100+ menus</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-base">📱</span>
+                <span className="text-white/90 text-xs font-semibold">Scan & Order</span>
+              </div>
             </div>
           </div>
 
-          {/* Slide indicators */}
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-            {mainBanners.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setActiveSlide(i)}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  i === activeSlide ? 'bg-white w-6' : 'bg-white/50'
-                }`}
-              />
-            ))}
-          </div>
         </div>
       </div>
 
-      {/* Quick Action Cards */}
-      <div className="px-4 -mt-6 relative z-20">
+      {/* ── Quick Action Cards — float over banner ── */}
+      <div className="px-4 -mt-5 relative z-20">
         <div className="grid grid-cols-3 gap-3">
           {quickActions.map((action, i) => (
             <div
               key={i}
-              className={`${action.color} rounded-2xl p-4 shadow-lg hover:scale-105 transition-transform cursor-pointer`}
+              className={`${action.bg} border ${action.border} rounded-2xl p-3.5 shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-200 cursor-pointer`}
             >
-              <div className="text-3xl mb-2">{action.icon}</div>
-              <div className="text-xs font-bold text-gray-800">{action.label}</div>
-              <div className="text-xs text-gray-600">{action.subtitle}</div>
+              <div className={`${action.iconBg} w-9 h-9 rounded-xl flex items-center justify-center mb-2 text-lg`}>
+                {action.icon}
+              </div>
+              <p className="text-xs font-bold text-gray-800 leading-tight">{action.label}</p>
+              <p className="text-xs text-gray-500 mt-0.5">{action.subtitle}</p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* What's on your mind section */}
+      {/* ── Category Scroll ── */}
       <div className="px-4 mt-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">What's on your mind?</h2>
-        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-          {['🍕', '🍔', '🍜', '🍰', '🥗', '🍗', '🌯', '🍱'].map((emoji, i) => (
+        <h2 className="text-base font-bold text-gray-800 mb-3">What are you craving?</h2>
+        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+          {categories.map((cat, i) => (
             <div
               key={i}
-              className="flex-shrink-0 w-20 h-20 bg-white rounded-full shadow-md flex items-center justify-center text-4xl hover:scale-110 transition-transform cursor-pointer"
+              className="flex-shrink-0 flex flex-col items-center gap-1.5 cursor-pointer group"
             >
-              {emoji}
+              <div className="w-14 h-14 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center text-2xl group-hover:scale-110 group-hover:shadow-md group-hover:border-orange-200 transition-all duration-200">
+                {cat.emoji}
+              </div>
+              <span className="text-xs text-gray-600 font-medium">{cat.label}</span>
             </div>
           ))}
         </div>
       </div>
 
-      
-   
-
-      <style jsx>{`
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        @keyframes bounce {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-10px);
-          }
-        }
-        .animate-bounce {
-          animation: bounce 2s infinite;
-        }
-      `}</style>
     </section>
   );
 }

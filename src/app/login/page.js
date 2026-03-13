@@ -28,12 +28,10 @@ export default function LoginPage() {
     const data = await res.json();
 
     if (data.success) {
-      localStorage.setItem("token", data.token);
       router.push("/admin/dashboard");
     } else {
       setError(data.error || "Login failed");
     }
-    localStorage.setItem("token", data.token);
     setLoading(false);
   };
 

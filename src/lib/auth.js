@@ -3,17 +3,16 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 export function verifyToken(req) {
   try {
+    // Prefer httpOnly cookie (XSS-safe), fall back to Authorization header
+    const cookieToken = req.cookies?.get?.("token")?.value;
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return null;
+    const headerToken = authHeader?.split(" ")[1];
 
-    const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, JWT_SECRET, {
-      algorithms: ["HS256"], // ✅ Fix here
-    });
+    const token = cookieToken || headerToken;
+    if (!token) return null;
 
-    return decoded;
-  } catch (err) {
-    console.error("JWT Verify Error:", err);
+    return jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] });
+  } catch {
     return null;
   }
 }

@@ -5,7 +5,6 @@ import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import dynamic from 'next/dynamic';
-const ScratchCardOffer = dynamic(() => import('@/components/ScratchCardOffer'), { ssr: false });
 const ItemDetailModal = dynamic(() => import('@/components/ItemDetailModal'), { ssr: false });
 const CartModal = dynamic(() => import('@/components/CartModal'), { ssr: false });
 const ImagePreviewModal = dynamic(() => import('@/components/ImagePreviewModal'), {
@@ -86,11 +85,6 @@ export default function MenuList({ restaurant, items = [], restaurantId }) {
     
 
     setSelectedItem(item);
-  };
-
-  const calculateDiscount = (current, original) => {
-    if (!original || original === 0) return 0;
-    return Math.round(((current - original) / original) * 100);
   };
 
   const removeFromCart = useCallback((itemId) => {
@@ -210,11 +204,6 @@ export default function MenuList({ restaurant, items = [], restaurantId }) {
             )}
           </div>
 
-          {cartItems.length > 0 && (
-            <div className="mb-6">
-              {/* <ScratchCardOffer /> */}
-            </div>
-          )}
 
           {/* Category Filters - Pill Style */}
           <div className="mb-6">
@@ -255,12 +244,14 @@ export default function MenuList({ restaurant, items = [], restaurantId }) {
                 <div className="flex gap-3 p-3">
                   {/* Image Section */}
                   <div className="relative flex-shrink-0">
-                    <img
+                    <Image
                       src={item?.imageUrl ?? '/default-food.jpg'}
                       alt={item?.name ?? 'Item'}
+                      width={96}
+                      height={96}
                       className="w-24 h-24 object-cover rounded-xl"
                     />
-                    
+
                     {/* Veg/Non-Veg Indicator */}
                     <div className="absolute top-1.5 left-1.5">
                       <div className={`w-4 h-4 border-2 rounded-sm flex items-center justify-center ${
@@ -270,11 +261,6 @@ export default function MenuList({ restaurant, items = [], restaurantId }) {
                           item?.category === 'veg' ? 'bg-green-600' : 'bg-red-600'
                         }`}></div>
                       </div>
-                    </div>
-
-                    {/* Rating */}
-                    <div className="absolute bottom-1.5 right-1.5 bg-green-600 text-white px-1.5 py-0.5 rounded text-xs font-bold flex items-center gap-0.5">
-                      ★ {item?.rating ?? "4.2"}
                     </div>
                   </div>
 
@@ -292,25 +278,15 @@ export default function MenuList({ restaurant, items = [], restaurantId }) {
                             ⭐ Bestseller
                           </span>
                         )}
-                        {calculateDiscount((item?.price ?? 0) + 50, (item?.price ?? 0)) > 0 && (
-                          <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-semibold">
-                            {calculateDiscount((item?.price ?? 0) + 50, (item?.price ?? 0))}% OFF
-                          </span>
-                        )}
                       </div>
                     </div>
                     
                     {/* Price & Add Button */}
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg font-black text-green-600">
-                            ₹{item?.price ?? 0}
-                          </span>
-                          <span className="text-xs text-gray-400 line-through">
-                            ₹{(item?.price ?? 0) + 50}
-                          </span>
-                        </div>
+                        <span className="text-lg font-black text-green-600">
+                          ₹{item?.price ?? 0}
+                        </span>
                       </div>
 
                       <button
@@ -417,15 +393,6 @@ export default function MenuList({ restaurant, items = [], restaurantId }) {
         )}
       </main>
 
-      <style jsx>{`
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
     </>
   );
 }

@@ -18,10 +18,7 @@ export default function AnalyticsPage() {
   const [restaurantId, setRestaurantId] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    fetch("/api/admin/me", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    fetch("/api/admin/me")
       .then(r => r.json())
       .then(res => setRestaurantId(res?.admin?.restaurantId));
   }, []);

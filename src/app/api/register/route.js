@@ -51,6 +51,16 @@ export async function POST(req) {
       return Response.json({ error: "All fields are required" }, { status: 400 });
     }
 
+    // Email format validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return Response.json({ error: "Invalid email format" }, { status: 400 });
+    }
+
+    // Password minimum length
+    if (password.length < 8) {
+      return Response.json({ error: "Password must be at least 8 characters" }, { status: 400 });
+    }
+
     // Check password match
     if (password !== confirmPassword) {
       return Response.json({ error: "Passwords do not match" }, { status: 400 });
@@ -84,9 +94,16 @@ export async function POST(req) {
     const logoUrl = uploadRes.secure_url;
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const slug = name.toLowerCase().replace(/\s+/g, "-");
-    
-    // ✅ ADD THIS LINE - Generate unique subdomain
+
+    // Generate unique slug (same uniqueness logic as subdomain)
+    let baseSlug = name.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, "-");
+    let slug = baseSlug;
+    let slugCounter = 1;
+    while (await Restaurant.findOne({ slug })) {
+      slug = `${baseSlug}-${slugCounter}`;
+      slugCounter++;
+    }
+
     const subdomain = await getUniqueSubdomain(name);
 
     const newRest = await Restaurant.create({
@@ -99,14 +116,19 @@ export async function POST(req) {
       logoUrl,
     });
 
-    return Response.json({ 
-      success: true, 
+    return Response.json({
+      success: true,
       restaurant: {
-        ...newRest.toObject(),
-        // ✅ ADD THESE LINES - Show the restaurant their new URL
+        id: newRest._id,
+        name: newRest.name,
+        email: newRest.email,
+        slug: newRest.slug,
+        subdomain: newRest.subdomain,
+        address: newRest.address,
+        logoUrl: newRest.logoUrl,
         menuUrl: `https://${subdomain}.menubuddy.co.in`,
-        subdomainUrl: `${subdomain}.menubuddy.co.in`
-      }
+        subdomainUrl: `${subdomain}.menubuddy.co.in`,
+      },
     }, { status: 201 });
   } catch (err) {
     console.error("Registration error:", err);

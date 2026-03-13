@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 const RestaurantSchema = new mongoose.Schema({
   name: String,
   email: { type: String, unique: true },
-  password: String,
+  password: { type: String, select: false },
   slug: { type: String, unique: true },
   
   // ✅ ADD THIS LINE - Add subdomain field right after slug
