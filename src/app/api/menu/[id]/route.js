@@ -14,7 +14,10 @@ export async function PUT(req, { params }) {
 
     await connectToDB();
     const { id } = params;
-    const data = await req.json();
+    const body = await req.json();
+
+    // Whitelist only the fields the client is allowed to change
+    const { name, description, price, category, bestseller, imageUrl } = body;
 
     // Only allow update if item belongs to the same restaurant
     const item = await MenuItem.findOne({ _id: id, restaurantId: decoded.id });
@@ -22,14 +25,24 @@ export async function PUT(req, { params }) {
       return Response.json({ error: "Item not found or unauthorized" }, { status: 404 });
     }
 
-    Object.assign(item, data);
+    if (name        !== undefined) item.name        = name;
+    if (description !== undefined) item.description = description;
+    if (price       !== undefined) item.price       = price;
+    if (category    !== undefined) item.category    = category;
+    if (bestseller  !== undefined) item.bestseller  = bestseller;
+    if (imageUrl    !== undefined) item.imageUrl    = imageUrl;
+
     await item.save();
 
     return Response.json({ success: true, item });
 
   } catch (err) {
     console.error("Edit Error:", err);
-    return Response.json({ error: "Failed to update item" }, { status: 500 });
+    // Surface the real Mongoose / DB error message so the client can show it
+    const message = err?.errors
+      ? Object.values(err.errors).map((e) => e.message).join("; ")
+      : err?.message || "Failed to update item";
+    return Response.json({ error: message }, { status: 500 });
   }
 }
 

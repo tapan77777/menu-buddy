@@ -1,717 +1,748 @@
-'use client'
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import RestaurantProfileSettings from "../RestaurantProfileSettings.jsx";
-function MenuManagement() {
+'use client';
 
+import Image from 'next/image';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import CategoryManager from '@/components/CategoryManager';
 
+// ── Spinner ───────────────────────────────────────────────────────────────────
+function Spinner({ sm }) {
+  return (
+    <svg
+      className={`animate-spin ${sm ? 'w-4 h-4' : 'w-5 h-5'} text-current`}
+      fill="none" viewBox="0 0 24 24"
+    >
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    </svg>
+  );
+}
 
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function Toast({ toast }) {
+  if (!toast) return null;
+  const colors = {
+    success: 'bg-emerald-600',
+    error:   'bg-red-600',
+    info:    'bg-blue-600',
+  };
+  return (
+    <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-2 ${colors[toast.type] || colors.info} text-white text-sm font-medium px-5 py-3 rounded-2xl shadow-2xl`}>
+      {toast.type === 'success' && <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>}
+      {toast.type === 'error'   && <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>}
+      {toast.msg}
+    </div>
+  );
+}
 
-  
-          const [items, setItems] = useState([]);
-          const [editingItem, setEditingItem] = useState(null);
-          const [restaurant, setRestaurant] = useState(null);
-          const [categoryFilter, setCategoryFilter] = useState("all");
-          const [search, setSearch] = useState("");
-          const [showAddForm, setShowAddForm] = useState(false);
-          const [loading, setLoading] = useState(false);
-          const [saving, setSaving] = useState(false);
-        
-          const router = useRouter();
-        
-          const startEditing = (item) => {
-            setEditingItem(item);
-          };
+// ── Input / Textarea / Select shared styles ───────────────────────────────────
+const inputCls = 'w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all';
 
-          useEffect(() => {
-            fetchMenuItems();
-          }, []);
-        
-         const fetchMenuItems = async () => {
-  try {
-    const res = await fetch("/api/menu");
-    if (res.status === 401) {
-      router.replace("/login");
-      return;
-    }
-    const data = await res.json();
-    if (data.success) {
-      setItems(data.items);
-      if (data.restaurant) setRestaurant(data.restaurant);
-    }
-  } catch (err) {
-    console.error("Fetch error:", err);
-  }
-};
-
-        
-          const deleteItem = async (id) => {
-            const res = await fetch(`/api/menu/${id}`, {
-              method: "DELETE",
-            });
-            const data = await res.json();
-            if (data.success) {
-              setItems((prev) => prev.filter((item) => item._id !== id));
-            } else alert(data.error || "Delete failed");
-          };
-        
-          const handleLogout = async () => {
-            const confirmed = window.confirm("Are you sure you want to logout?");
-            if (confirmed) {
-              await fetch("/api/logout", { method: "POST" });
-              window.location.href = "/login";
-            }
-          };
-        
-          const totalCount = items.length;
-          const categories = [
-            { id: "all", name: "All Items", icon: "📋" },
-            { id: "veg", name: "Vegetarian", icon: "🥗" },
-            { id: "non-veg", name: "Non-Vegetarian", icon: "🍗" },
-            { id: "drinks", name: "Beverages", icon: "🥤" },
-            { id: "special", name: "Special", icon: "⭐" },
-            { id: "starters", name: "Starters", icon: "🍽️" },
-          ];
-        
-          const filteredItems = items.filter((item) => {
-            const matchesCategory =
-              categoryFilter === "all" ||
-              item.category?.toLowerCase() === categoryFilter;
-            const matchesSearch = item.name
-              .toLowerCase()
-              .includes(search.toLowerCase());
-            return matchesCategory && matchesSearch;
-          });
-
-          // when editingItem changes, update form fields
-const [name, setName] = useState("");
-const [description, setDescription] = useState("");
-
-// when editingItem changes, update form fields
-useEffect(() => {
-  if (editingItem) {
-    setName(editingItem.name || "");
-    setDescription(editingItem.description || "");
-  }
-}, [editingItem]);
-
-        
-          return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-              {/* Header */}
-              <header className="bg-white shadow-sm border-b border-slate-200">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                  <div className="flex justify-between items-center h-16">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                          <span className="text-white font-bold text-lg">🍽️</span>
-                        </div>
-                        <div>
-                          <h1 className="text-xl font-bold text-slate-900">
-                            {restaurant?.name || "Restaurant Admin"}
-                          </h1>
-                          <p className="text-sm text-slate-500">Menu Management</p>
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={handleLogout}
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
-                    >
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                      </svg>
-                      Logout
-                    </button>
-                  </div>
-                </div>
-              </header>
-        
-        
-              {/* Main Content */}
-              <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-                {restaurant ? (
-  <RestaurantProfileSettings restaurant={restaurant} />
-) : (
-  <p className="text-slate-500">Loading restaurant...</p>
-)}
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        
-               {/* Profile Section */}
-
-
-
-        
-                  <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                          <span className="text-blue-600 font-semibold">📊</span>
-                        </div>
-                      </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-slate-500">Total Items</p>
-                        <p className="text-2xl font-bold text-slate-900">{totalCount}</p>
-                      </div>
-                    </div>
-                  </div>
-
-
-        
-                  <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                          <span className="text-green-600 font-semibold">🥗</span>
-                        </div>
-                      </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-slate-500">Vegetarian</p>
-                        <p className="text-2xl font-bold text-slate-900">
-                          {items.filter(item => item.category === 'veg').length}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-        
-                  <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
-                          <span className="text-red-600 font-semibold">🍗</span>
-                        </div>
-                      </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-slate-500">Non-Veg</p>
-                        <p className="text-2xl font-bold text-slate-900">
-                          {items.filter(item => item.category === 'non-veg').length}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-        
-                  <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                          <span className="text-yellow-600 font-semibold">🔥</span>
-                        </div>
-                      </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-slate-500">Bestsellers</p>
-                        <p className="text-2xl font-bold text-slate-900">
-                          {items.filter(item => item.bestseller).length}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-        
-                {/* Search and Filter Section */}
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                    <div className="flex-1 max-w-md">
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                          </svg>
-                        </div>
-                        <input
-                          type="text"
-                          placeholder="Search menu items..."
-                          value={search}
-                          onChange={(e) => setSearch(e.target.value)}
-                          className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                    </div>
-        
-                    <div className="flex flex-wrap gap-2">
-                      {categories.map((cat) => (
-                        <button
-                          key={cat.id}
-                          onClick={() => setCategoryFilter(cat.id)}
-                          className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                            categoryFilter === cat.id
-                              ? "bg-blue-600 text-white shadow-sm"
-                              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                          }`}
-                        >
-                          <span className="mr-2">{cat.icon}</span>
-                          {cat.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-        
-                {/* Edit Form */}
-                {editingItem && (
-                  <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-lg font-semibold text-slate-900 flex items-center">
-                        <span className="mr-2">✏️</span>
-                        Edit Menu Item
-                      </h2>
-                      <button
-                        onClick={() => setEditingItem(null)}
-                        className="text-slate-400 hover:text-slate-600 transition-colors"
-                      >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-        
-                    <form
-                      onSubmit={async (e) => {
-                        e.preventDefault();
-                        setSaving(true);
-                        const form = e.target;
-        
-                        const updatedItem = {
-                          name: form.name.value,
-                          description: form.description.value,
-                          price: form.price.value,
-                          category: form.category.value,
-                          bestseller: form.bestseller.checked,
-                        };
-        
-                        if (form.image.files[0]) {
-                          const formData = new FormData();
-                          formData.append("file", form.image.files[0]);
-        
-                          const uploadRes = await fetch("/api/upload", {
-                            method: "POST",
-                            body: formData,
-                          });
-                          const uploadData = await uploadRes.json();
-        
-                          if (!uploadData.success) {
-                            alert("Image upload failed!");
-                            setSaving(false);
-                            return;
-                          }
-        
-                          updatedItem.imageUrl = uploadData.url;
-                        }
-        
-                        const res = await fetch(`/api/menu/${editingItem._id}`, {
-                          method: "PUT",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify(updatedItem),
-                        });
-        
-                        const data = await res.json();
-                        if (data.success) {
-                          setItems((prev) =>
-                            prev.map((it) => (it._id === editingItem._id ? data.item : it))
-                          );
-                          setEditingItem(null);
-                        } else {
-                          alert(data.error || "Update failed");
-                        }
-        
-                        setSaving(false);
-                      }}
-                      className="grid grid-cols-1 md:grid-cols-2 gap-6"
-                    >
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Item Name</label>
-                        <input
-                          type="text"
-                          name="name"
-                          defaultValue={editingItem.name}
-                          required
-                          className="w-full px-3 py-2 border-2 border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                        />
-                      </div>
-        
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Price (₹)</label>
-                        <input
-                          type="text"
-                          name="price"
-                          defaultValue={editingItem.price}
-                          required
-                          className="w-full px-3 py-2 border-2 border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                        />
-                      </div>
-        
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Category</label>
-                        <select
-                          name="category"
-                          defaultValue={editingItem.category}
-                          required
-                          className="w-full px-3 py-2 border-2 border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                        >
-                          <option value="">Select Category</option>
-                          <option value="veg">🥗 Vegetarian</option>
-                          <option value="non-veg">🍗 Non-Vegetarian</option>
-                          <option value="drinks">🥤 Beverages</option>
-                          <option value="special">⭐ Special</option>
-                          <option value="starters">🍽️ Starters</option>
-                        </select>
-                      </div>
-        
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Image</label>
-                        <input
-                          type="file"
-                          name="image"
-                          accept="image/*"
-                          className="w-full px-3 py-2 border-2 border-slate-300 rounded-lg bg-white text-slate-900 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                        />
-                      </div>
-        
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
-                        <textarea
-                          name="description"
-                          defaultValue={editingItem.description}
-                          rows={3}
-                          className="w-full px-3 py-2 border-2 border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
-                        />
-                      </div>
-
-
-
-                      <div className="md:col-span-2">
-                        <label className="flex items-center">
-                          <input
-                            type="checkbox"
-                            name="bestseller"
-                            defaultChecked={editingItem.bestseller}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
-                          />
-                          <span className="ml-2 text-sm text-slate-700">Mark as Bestseller 🔥</span>
-                        </label>
-                      </div>
-
-        
-                      <div className="md:col-span-2 flex gap-4">
-                        <button
-                          type="submit"
-                          disabled={saving}
-                          className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          {saving ? (
-                            <>
-                              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              Saving...
-                            </>
-                          ) : (
-                            "Save Changes"
-                          )}
-                        </button>
-        
-                        <button
-                          type="button"
-                          onClick={() => setEditingItem(null)}
-                          className="inline-flex items-center px-6 py-3 border border-slate-300 text-base font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                )}
-        
-                {/* Menu Items Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {filteredItems.map((item) => (
-                    <div
-                      key={item._id}
-                      className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow"
-                    >
-                      {item.imageUrl && (
-                        <div className="relative w-full h-48 overflow-hidden">
-                          <Image
-  src={item.imageUrl}
-  alt={item.name}
-  fill
-  className="h-24 w-24 rounded object-cover"
-/>
-                          {item.bestseller && (
-                            <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium">
-                              🔥 Bestseller
-                            </div>
-                          )}
-                        </div>
-                      )}
-        
-                      <div className="p-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <h3 className="font-semibold text-slate-900 line-clamp-1">{item.name}</h3>
-                          <span className="text-lg font-bold text-green-600">₹{item.price}</span>
-                        </div>
-        
-                        <p className="text-sm text-slate-600 mb-3 line-clamp-2">{item.description}</p>
-        
-                        <div className="flex items-center justify-between">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 capitalize">
-                            {item.category}
-                          </span>
-        
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => {
-                                startEditing(item);
-                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                              }}
-                              className="inline-flex items-center px-3 py-1.5 border border-slate-300 text-xs font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                            >
-                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                              Edit
-                            </button>
-        
-                            <button
-                              onClick={() => {
-                                if (window.confirm(`Are you sure you want to delete "${item.name}"?`)) {
-                                  deleteItem(item._id);
-                                }
-                              }}
-                              className="inline-flex items-center px-3 py-1.5 border border-red-300 text-xs font-medium rounded-lg text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
-                            >
-                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-        
-                {filteredItems.length === 0 && (
-                  <div className="text-center py-12">
-                    <svg className="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    <h3 className="mt-2 text-sm font-medium text-slate-900">No items found</h3>
-                    <p className="mt-1 text-sm text-slate-500">
-                      {search || categoryFilter !== "all" 
-                        ? "Try adjusting your search or filter criteria."
-                        : "Get started by adding your first menu item."}
-                    </p>
-                  </div>
-                )}
-              </main>
-        
-              {/* Floating Add Button */}
-              <button
-                onClick={() => setShowAddForm(true)}
-                className="fixed bottom-8 right-8 inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-lg text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all transform hover:scale-105"
-              >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Add Item
-              </button>
-        
-              {/* Add Item Modal */}
-              {showAddForm && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 px-4"
-            onClick={() => setShowAddForm(false)}
-          >
-            <div
-              className="bg-white rounded-lg p-6 w-full max-w-2xl shadow-lg"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Modal Header */}
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-slate-900 flex items-center">
-                  <span className="mr-2">➕</span> Add New Menu Item
-                </h3>
-                <button
-                  onClick={() => setShowAddForm(false)}
-                  className="text-slate-400 hover:text-slate-600 transition-colors"
-                >
-                  ✖
-                </button>
-              </div>
-        
-              {/* Modal Form */}
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  setLoading(true);
-                  const form = e.target;
-                  const imageFile = form.image.files[0];
-        
-                  const formData = new FormData();
-                  formData.append("file", imageFile);
-        
-                  try {
-                    const uploadRes = await fetch("/api/upload", {
-                      method: "POST",
-                      body: formData,
-                    });
-        
-                    const uploadData = await uploadRes.json();
-                    if (!uploadData.success) {
-                      alert("Image upload failed!");
-                      setLoading(false);
-                      return;
-                    }
-        
-                    const newItem = {
-                      name: form.name.value,
-                      description: form.description.value,
-                      price: form.price.value,
-                      category: form.category.value,
-                      bestseller: form.bestseller.checked,
-                      imageUrl: uploadData.url,
-                    };
-        
-                    const res = await fetch("/api/menu", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify(newItem),
-                    });
-        
-                    const data = await res.json();
-                    if (data.success) {
-                      setItems([data.item, ...items]);
-                      form.reset();
-                      setShowAddForm(false);
-                    } else {
-                      alert(data.error || "Something went wrong");
-                    }
-                  } catch (err) {
-                    console.error(err);
-                    alert("Something went wrong!");
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-                className="grid grid-cols-1 md:grid-cols-2 gap-6"
-              >
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2 ">Item Name</label>
-                  <input
-                    type="text"
-                    name="name"
-                    placeholder="Enter item name"
-                    required
-                    className="w-full px-3 py-2 border-2 border-slate-300 rounded-lg text-black"
-                  />
-                </div>
-        
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2 text-black">Price (₹)</label>
-                  <input
-                    type="text"
-                    name="price"
-                    placeholder="Enter price"
-                    required
-                    className="w-full px-3 py-2 border-2 border-slate-300 rounded-lg text-black"
-                  />
-                </div>
-        
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2 text-black">Category</label>
-                  <select
-                    name="category"
-                    required
-                    className="w-full px-3 py-2 border-2 border-slate-300 rounded-lg text-black"
-                  >
-                    <option value="">Select Category</option>
-                    <option value="veg">🥗 Vegetarian</option>
-                    <option value="non-veg">🍗 Non-Vegetarian</option>
-                    <option value="drinks">🥤 Beverages</option>
-                    <option value="special">⭐ Special</option>
-                    <option value="starters">🍽️ Starters</option>
-                  </select>
-                </div>
-        
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2 text-black">Image</label>
-                  <input
-                    type="file"
-                    name="image"
-                    accept="image/*"
-                    required
-                    className="w-full px-3 py-2 border-2 border-slate-300 rounded-lg text-black"
-                  />
-                </div>
-        
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-slate-700 mb-2 text-black ">Description</label>
-                  <textarea
-                    name="description"
-                    rows={3}
-                    className="w-full px-3 py-2 border-2 border-slate-300 rounded-lg resize-none text-black text-black"
-                  />
-                </div>
-        
-                <div className="md:col-span-2">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="bestseller"
-                      className="h-4 w-4 text-blue-600 border-slate-300 rounded"
-                    />
-                    <span className="ml-2 text-sm text-slate-700">Mark as Bestseller 🔥</span>
-                  </label>
-                </div>
-
-
-
-        
-                <div className="md:col-span-2 flex gap-4">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex-1 inline-flex justify-center items-center px-6 py-3 text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg hover:from-blue-700 hover:to-purple-700"
-                  >
-                    {loading ? (
-                      <>
-                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0..." />
-                        </svg>
-                        Adding Item...
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                        Add Item
-                      </>
-                    )}
-                  </button>
-        
-                  <button
-                    type="button"
-                    onClick={() => setShowAddForm(false)}
-                    className="px-6 py-3 border border-slate-300 text-slate-700 bg-white rounded-lg hover:bg-slate-50"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
+// ── Item card (grid mode) ─────────────────────────────────────────────────────
+function ItemCard({ item, onEdit, onDelete, categoryEmoji }) {
+  const [deleting, setDeleting] = useState(false);
+  return (
+    <div className="group bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden flex flex-col">
+      {/* Image */}
+      <div className="relative h-44 bg-slate-100 flex-shrink-0">
+        {item.imageUrl ? (
+          <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <span className="text-5xl opacity-20">🍽️</span>
           </div>
         )}
-        
-            </div>
-          );
-        }
+        {/* Overlay actions on hover */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200" />
+        <div className="absolute top-2.5 right-2.5 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <button
+            onClick={() => onEdit(item)}
+            className="w-8 h-8 bg-white rounded-xl flex items-center justify-center shadow-md hover:bg-orange-50 hover:text-orange-600 transition-colors"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+          </button>
+          <button
+            onClick={async () => {
+              setDeleting(true);
+              await onDelete(item._id);
+              setDeleting(false);
+            }}
+            className="w-8 h-8 bg-white rounded-xl flex items-center justify-center shadow-md hover:bg-red-50 hover:text-red-600 transition-colors"
+          >
+            {deleting ? <Spinner sm /> : (
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            )}
+          </button>
+        </div>
+        {item.bestseller && (
+          <div className="absolute top-2.5 left-2.5 bg-amber-400 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+            🔥 Best
+          </div>
+        )}
+      </div>
 
-export default MenuManagement
+      {/* Body */}
+      <div className="p-4 flex flex-col flex-1">
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <h3 className="font-semibold text-slate-900 text-sm line-clamp-1 leading-snug flex-1">{item.name}</h3>
+          <span className="text-sm font-bold text-slate-900 flex-shrink-0">₹{item.price}</span>
+        </div>
+        <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed flex-1 mb-3">
+          {item.description || <span className="italic">No description</span>}
+        </p>
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full capitalize">
+            {categoryEmoji} {item.category}
+          </span>
+          <button
+            onClick={() => onEdit(item)}
+            className="text-xs font-semibold text-orange-500 hover:text-orange-700 transition-colors"
+          >
+            Edit →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Item row (list mode) ──────────────────────────────────────────────────────
+function ItemRow({ item, onEdit, onDelete, categoryEmoji }) {
+  const [deleting, setDeleting] = useState(false);
+  return (
+    <div className="flex items-center gap-4 bg-white rounded-xl border border-slate-100 px-4 py-3 hover:shadow-sm hover:border-slate-200 transition-all duration-150 group">
+      <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
+        {item.imageUrl ? (
+          <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-2xl opacity-20">🍽️</div>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-0.5">
+          <span className="font-semibold text-slate-900 text-sm truncate">{item.name}</span>
+          {item.bestseller && <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">🔥 Best</span>}
+        </div>
+        <p className="text-xs text-slate-400 truncate">{item.description || 'No description'}</p>
+      </div>
+      <span className="text-xs text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full capitalize flex-shrink-0 hidden sm:block">
+        {categoryEmoji} {item.category}
+      </span>
+      <span className="font-bold text-slate-900 text-sm flex-shrink-0 w-16 text-right">₹{item.price}</span>
+      <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+        <button
+          onClick={() => onEdit(item)}
+          className="px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-orange-100 hover:text-orange-700 rounded-lg transition-colors"
+        >
+          Edit
+        </button>
+        <button
+          onClick={async () => { setDeleting(true); await onDelete(item._id); setDeleting(false); }}
+          className="px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-red-100 hover:text-red-700 rounded-lg transition-colors"
+        >
+          {deleting ? <Spinner sm /> : 'Delete'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Item Drawer (add + edit) ──────────────────────────────────────────────────
+function ItemDrawer({ open, onClose, editingItem, restaurantCategories, onSaved }) {
+  const isEdit = !!editingItem;
+  const [saving, setSaving] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null);
+  const formRef = useRef(null);
+
+  useEffect(() => {
+    setImagePreview(isEdit ? editingItem.imageUrl : null);
+    if (!open) setSaving(false);
+  }, [open, editingItem, isEdit]);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setSaving(true);
+    const form = e.target;
+
+    try {
+      let imageUrl = isEdit ? editingItem.imageUrl : undefined;
+
+      if (form.image.files[0]) {
+        const fd = new FormData();
+        fd.append('file', form.image.files[0]);
+        const up = await fetch('/api/upload', { method: 'POST', body: fd });
+        const upData = await up.json();
+        if (!upData.success) { onSaved(null, 'Image upload failed'); setSaving(false); return; }
+        imageUrl = upData.url;
+      }
+
+      const payload = {
+        name: form.itemName.value,
+        description: form.description.value,
+        price: form.price.value,
+        category: form.category.value,
+        bestseller: form.bestseller.checked,
+        ...(imageUrl ? { imageUrl } : {}),
+      };
+
+      const url    = isEdit ? `/api/menu/${editingItem._id}` : '/api/menu';
+      const method = isEdit ? 'PUT' : 'POST';
+      const res    = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const data   = await res.json();
+
+      if (data.success) {
+        onSaved(data.item || data, null, isEdit);
+        onClose();
+      } else {
+        onSaved(null, data.error || 'Something went wrong');
+      }
+    } catch {
+      onSaved(null, 'Something went wrong');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <>
+      {/* Backdrop */}
+      {open && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 backdrop-blur-sm"
+          onClick={onClose}
+        />
+      )}
+
+      {/* Drawer */}
+      <aside
+        className={`fixed top-0 right-0 h-full w-full max-w-md bg-white z-50 shadow-2xl flex flex-col transition-transform duration-300 ease-out ${open ? 'translate-x-0' : 'translate-x-full'}`}
+      >
+        {/* Drawer header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+          <div>
+            <h2 className="text-base font-bold text-slate-900">{isEdit ? 'Edit Item' : 'Add New Item'}</h2>
+            <p className="text-xs text-slate-400 mt-0.5">{isEdit ? `Editing: ${editingItem?.name}` : 'Fill in the details below'}</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Form */}
+        <form ref={formRef} onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+
+          {/* Image upload */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Photo</label>
+            <div
+              className="relative h-48 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 overflow-hidden cursor-pointer hover:border-orange-300 hover:bg-orange-50 transition-colors"
+              onClick={() => formRef.current?.querySelector('input[name=image]')?.click()}
+            >
+              {imagePreview ? (
+                <Image src={imagePreview} alt="preview" fill className="object-cover rounded-2xl" />
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-400">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span className="text-sm font-medium">Click to upload photo</span>
+                  <span className="text-xs">JPG, PNG, WEBP</span>
+                </div>
+              )}
+              {imagePreview && (
+                <div className="absolute inset-0 bg-black/0 hover:bg-black/30 transition-colors flex items-center justify-center">
+                  <span className="text-white text-sm font-semibold opacity-0 hover:opacity-100 transition-opacity">Change photo</span>
+                </div>
+              )}
+            </div>
+            <input
+              type="file"
+              name="image"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files[0];
+                if (f) setImagePreview(URL.createObjectURL(f));
+              }}
+            />
+          </div>
+
+          {/* Name */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Item Name <span className="text-red-400">*</span></label>
+            <input
+              type="text"
+              name="itemName"
+              defaultValue={isEdit ? editingItem?.name : ''}
+              key={editingItem?._id ?? 'add-name'}
+              placeholder="e.g. Butter Chicken"
+              required
+              className={inputCls}
+            />
+          </div>
+
+          {/* Price + Category */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Price (₹) <span className="text-red-400">*</span></label>
+              <input
+                type="number"
+                name="price"
+                defaultValue={isEdit ? editingItem?.price : ''}
+                key={editingItem?._id ?? 'add-price'}
+                placeholder="0"
+                required
+                min="0"
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Category <span className="text-red-400">*</span></label>
+              <select
+                name="category"
+                defaultValue={isEdit ? editingItem?.category : ''}
+                key={editingItem?._id ?? 'add-cat'}
+                required
+                className={inputCls}
+              >
+                <option value="">Select…</option>
+                {restaurantCategories.map((c) => (
+                  <option key={c._id} value={c.name}>
+                    {c.emoji} {c.name.charAt(0).toUpperCase() + c.name.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Description</label>
+            <textarea
+              name="description"
+              defaultValue={isEdit ? editingItem?.description : ''}
+              key={editingItem?._id ?? 'add-desc'}
+              rows={3}
+              placeholder="Short description of the dish…"
+              className={`${inputCls} resize-none`}
+            />
+          </div>
+
+          {/* Bestseller toggle */}
+          <label className="flex items-center gap-3 p-3.5 bg-amber-50 border border-amber-100 rounded-xl cursor-pointer hover:bg-amber-100 transition-colors">
+            <input
+              type="checkbox"
+              name="bestseller"
+              defaultChecked={isEdit ? editingItem?.bestseller : false}
+              key={editingItem?._id ?? 'add-bs'}
+              className="w-4 h-4 accent-amber-500 rounded"
+            />
+            <div>
+              <p className="text-sm font-semibold text-slate-800">🔥 Mark as Bestseller</p>
+              <p className="text-xs text-slate-500">Shows a badge on this item</p>
+            </div>
+          </label>
+        </form>
+
+        {/* Footer actions */}
+        <div className="px-6 py-4 border-t border-slate-100 flex gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 px-4 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => formRef.current?.requestSubmit()}
+            disabled={saving}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-orange-500 hover:bg-orange-600 disabled:opacity-60 disabled:cursor-not-allowed rounded-xl transition-colors shadow-sm"
+          >
+            {saving && <Spinner sm />}
+            {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Add Item'}
+          </button>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+// ── Skeleton ──────────────────────────────────────────────────────────────────
+function SkeletonGrid() {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {[...Array(8)].map((_, i) => (
+        <div key={i} className="bg-white rounded-2xl border border-slate-100 overflow-hidden animate-pulse">
+          <div className="h-44 bg-slate-200" />
+          <div className="p-4 space-y-2">
+            <div className="h-4 bg-slate-200 rounded w-3/4" />
+            <div className="h-3 bg-slate-100 rounded w-full" />
+            <div className="h-3 bg-slate-100 rounded w-2/3" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+export default function MenuManagement() {
+  const [items, setItems]                         = useState([]);
+  const [restaurant, setRestaurant]               = useState(null);
+  const [restaurantCategories, setRestaurantCats] = useState([]);
+  const [categoryFilter, setCategoryFilter]       = useState('all');
+  const [search, setSearch]                       = useState('');
+  const [viewMode, setViewMode]                   = useState('grid');
+  const [drawerOpen, setDrawerOpen]               = useState(false);
+  const [editingItem, setEditingItem]             = useState(null);
+  const [initialLoading, setInitialLoading]       = useState(true);
+  const [toast, setToast]                         = useState(null);
+  const [showCategories, setShowCategories]       = useState(false);
+  const router = useRouter();
+  const toastTimer = useRef(null);
+
+  useEffect(() => { fetchMenuItems(); }, []);
+
+  function showToast(msg, type = 'success') {
+    clearTimeout(toastTimer.current);
+    setToast({ msg, type });
+    toastTimer.current = setTimeout(() => setToast(null), 3000);
+  }
+
+  async function fetchMenuItems() {
+    try {
+      const res = await fetch('/api/menu');
+      if (res.status === 401) { router.replace('/login'); return; }
+      const data = await res.json();
+      if (data.success) {
+        setItems(data.items);
+        if (data.restaurant) {
+          setRestaurant(data.restaurant);
+          if (data.restaurant.categories?.length) setRestaurantCats(data.restaurant.categories);
+        }
+      }
+    } finally {
+      setInitialLoading(false);
+    }
+  }
+
+  async function deleteItem(id) {
+    const res  = await fetch(`/api/menu/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.success) {
+      setItems((prev) => prev.filter((i) => i._id !== id));
+      showToast('Item deleted');
+    } else {
+      showToast(data.error || 'Delete failed', 'error');
+    }
+  }
+
+  function openAdd() { setEditingItem(null); setDrawerOpen(true); }
+  function openEdit(item) { setEditingItem(item); setDrawerOpen(true); }
+
+  function handleSaved(item, error, isEdit) {
+    if (error) { showToast(error, 'error'); return; }
+    if (isEdit) {
+      setItems((prev) => prev.map((i) => (i._id === item._id ? item : i)));
+      showToast('Item updated');
+    } else {
+      setItems((prev) => [item, ...prev]);
+      showToast('Item added');
+    }
+  }
+
+  async function handleLogout() {
+    if (!window.confirm('Log out?')) return;
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.href = '/login';
+  }
+
+  // Derived — all category comparisons are normalised to lowercase to avoid
+  // case-mismatch bugs (e.g. stored "Special" vs filter id "special").
+  const catMap = Object.fromEntries(
+    restaurantCategories.map((c) => [c.name.toLowerCase(), c.emoji])
+  );
+  const filterPills = [
+    { id: 'all', name: 'All', icon: '📋', count: items.length },
+    ...restaurantCategories.map((c) => ({
+      id: c.name.toLowerCase(),
+      name: c.name.charAt(0).toUpperCase() + c.name.slice(1),
+      icon: c.emoji,
+      count: items.filter((i) => i.category?.toLowerCase() === c.name.toLowerCase()).length,
+    })),
+  ];
+
+  const filteredItems = items.filter((item) => {
+    const matchCat    = categoryFilter === 'all' || item.category?.toLowerCase() === categoryFilter;
+    const matchSearch = item.name.toLowerCase().includes(search.toLowerCase());
+    return matchCat && matchSearch;
+  });
+
+  const bestsellers = items.filter((i) => i.bestseller).length;
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+
+      {/* ── Sticky Header ─────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-4">
+
+          {/* Back */}
+          <Link
+            href="/admin/dashboard"
+            className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 transition-colors flex-shrink-0"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            <span className="hidden sm:block">Dashboard</span>
+          </Link>
+
+          <span className="text-slate-300 font-light text-lg hidden sm:block">/</span>
+
+          {/* Title */}
+          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+            <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <span className="text-lg">🍽️</span>
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-sm font-bold text-slate-900 truncate">{restaurant?.name || 'Menu Management'}</h1>
+              <p className="text-xs text-slate-400 hidden sm:block">Manage your menu items</p>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={handleLogout}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Logout
+            </button>
+            <button
+              onClick={openAdd}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-orange-500 hover:bg-orange-600 active:scale-95 rounded-xl transition-all shadow-sm"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+              </svg>
+              <span className="hidden sm:block">Add Item</span>
+              <span className="sm:hidden">Add</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        {/* ── Stats row ───────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: 'Total Items',  value: items.length,     icon: '🍽️', color: 'bg-blue-50   text-blue-700'   },
+            { label: 'Bestsellers',  value: bestsellers,      icon: '🔥', color: 'bg-amber-50  text-amber-700'  },
+            { label: 'Categories',   value: restaurantCategories.length, icon: '🗂️', color: 'bg-purple-50 text-purple-700' },
+            { label: 'Filtered Now', value: filteredItems.length, icon: '🔍', color: 'bg-emerald-50 text-emerald-700' },
+          ].map((s) => (
+            <div key={s.label} className="bg-white rounded-2xl border border-slate-100 px-4 py-3.5 flex items-center gap-3">
+              <span className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0 ${s.color}`}>{s.icon}</span>
+              <div>
+                <p className="text-xl font-black text-slate-900 leading-none">{s.value}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{s.label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Toolbar ─────────────────────────────────────────────────────── */}
+        <div className="bg-white rounded-2xl border border-slate-100 p-3 flex flex-col gap-3">
+
+          {/* Search + view toggle */}
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1">
+              <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search items..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 focus:bg-white transition-all"
+              />
+              {search && (
+                <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              )}
+            </div>
+
+            {/* View toggle */}
+            <div className="flex items-center bg-slate-100 rounded-xl p-1 gap-1 flex-shrink-0">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-400 hover:text-slate-600'}`}
+                title="Grid view"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M3 3h7v7H3V3zm11 0h7v7h-7V3zM3 14h7v7H3v-7zm11 0h7v7h-7v-7z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-400 hover:text-slate-600'}`}
+                title="List view"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Category filter pills */}
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
+            {filterPills.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setCategoryFilter(cat.id)}
+                className={`flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-150 ${
+                  categoryFilter === cat.id
+                    ? 'bg-orange-500 text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <span>{cat.icon}</span>
+                {cat.name}
+                <span className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                  categoryFilter === cat.id ? 'bg-white/30 text-white' : 'bg-slate-200 text-slate-500'
+                }`}>
+                  {cat.count}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Category Manager (collapsible) ──────────────────────────────── */}
+        <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+          <button
+            onClick={() => setShowCategories(!showCategories)}
+            className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors"
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="text-lg">🗂️</span>
+              <div className="text-left">
+                <p className="text-sm font-bold text-slate-900">Manage Categories</p>
+                <p className="text-xs text-slate-400">{restaurantCategories.length} categories · drag to reorder</p>
+              </div>
+            </div>
+            <svg
+              className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${showCategories ? 'rotate-180' : ''}`}
+              fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showCategories && (
+            <div className="border-t border-slate-100">
+              <CategoryManager onCategoriesChange={setRestaurantCats} />
+            </div>
+          )}
+        </div>
+
+        {/* ── Menu Items ──────────────────────────────────────────────────── */}
+        <div>
+          {/* Section label */}
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-semibold text-slate-500">
+              {filteredItems.length === 0
+                ? 'No items'
+                : `${filteredItems.length} item${filteredItems.length !== 1 ? 's' : ''}`}
+              {(search || categoryFilter !== 'all') && (
+                <button onClick={() => { setSearch(''); setCategoryFilter('all'); }} className="ml-2 text-orange-500 hover:text-orange-700 font-semibold">
+                  Clear filters ×
+                </button>
+              )}
+            </p>
+          </div>
+
+          {initialLoading ? (
+            <SkeletonGrid />
+          ) : filteredItems.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-slate-100 flex flex-col items-center justify-center py-20 px-8 text-center">
+              <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4 text-3xl">
+                {search ? '🔍' : '🍽️'}
+              </div>
+              <h3 className="text-base font-bold text-slate-800 mb-1">
+                {search ? 'No items match your search' : 'No items yet'}
+              </h3>
+              <p className="text-sm text-slate-400 mb-6">
+                {search
+                  ? `Try different keywords or clear the search`
+                  : `Add your first menu item to get started`}
+              </p>
+              {!search && (
+                <button
+                  onClick={openAdd}
+                  className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-orange-500 hover:bg-orange-600 rounded-xl transition-colors shadow-sm"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add First Item
+                </button>
+              )}
+            </div>
+          ) : viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filteredItems.map((item) => (
+                <ItemCard
+                  key={item._id}
+                  item={item}
+                  onEdit={openEdit}
+                  onDelete={deleteItem}
+                  categoryEmoji={catMap[item.category?.toLowerCase()] || ''}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filteredItems.map((item) => (
+                <ItemRow
+                  key={item._id}
+                  item={item}
+                  onEdit={openEdit}
+                  onDelete={deleteItem}
+                  categoryEmoji={catMap[item.category?.toLowerCase()] || ''}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* ── Drawer ──────────────────────────────────────────────────────────── */}
+      <ItemDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        editingItem={editingItem}
+        restaurantCategories={restaurantCategories}
+        onSaved={handleSaved}
+      />
+
+      {/* ── Toast ───────────────────────────────────────────────────────────── */}
+      <Toast toast={toast} />
+    </div>
+  );
+}

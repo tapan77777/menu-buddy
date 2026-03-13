@@ -3,73 +3,102 @@
 import HomeIconButton from '@/components/HomeIconButton';
 import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-
 import dynamic from 'next/dynamic';
-const ItemDetailModal = dynamic(() => import('@/components/ItemDetailModal'), { ssr: false });
-const CartModal = dynamic(() => import('@/components/CartModal'), { ssr: false });
-const ImagePreviewModal = dynamic(() => import('@/components/ImagePreviewModal'), {
-  ssr: false,
-});
 
-// Debounce hook
+const ItemDetailModal  = dynamic(() => import('@/components/ItemDetailModal'),  { ssr: false });
+const CartModal        = dynamic(() => import('@/components/CartModal'),         { ssr: false });
+const ImagePreviewModal = dynamic(() => import('@/components/ImagePreviewModal'), { ssr: false });
+
+// ── Debounce hook ─────────────────────────────────────────────────────────────
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
   useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
     return () => clearTimeout(handler);
   }, [value, delay]);
   return debouncedValue;
 }
 
-export default function MenuList({ restaurant, items = [], restaurantId }) {
-  const [filter, setFilter] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [cartItems, setCartItems] = useState([]);
+// ── Veg / Non-veg dot indicator ───────────────────────────────────────────────
+function VegIndicator({ category }) {
+  const isVeg = category === 'veg';
+  return (
+    <div className={`w-4 h-4 border-2 rounded-sm flex items-center justify-center bg-white ${
+      isVeg ? 'border-green-600' : 'border-red-600'
+    }`}>
+      <div className={`w-2 h-2 rounded-full ${isVeg ? 'bg-green-600' : 'bg-red-600'}`} />
+    </div>
+  );
+}
+
+const DEFAULT_CATEGORIES = [
+  { id: 'veg',     label: 'Veg',      emoji: '🥗' },
+  { id: 'non-veg', label: 'Non-Veg',  emoji: '🍗' },
+  { id: 'starters',label: 'Starters', emoji: '🍢' },
+  { id: 'special', label: 'Special',  emoji: '⭐' },
+  { id: 'drinks',  label: 'Drinks',   emoji: '🥤' },
+];
+
+// ── Main component ────────────────────────────────────────────────────────────
+export default function MenuList({ restaurant, items = [], restaurantId, categories = [] }) {
+  // Build a lookup map from the restaurant's category config (for emoji + display label).
+  // Fall back to DEFAULT_CATEGORIES when the restaurant has no saved config yet.
+  // Use (c.name ?? c.id) so both shapes work: restaurant categories have `name`,
+  // DEFAULT_CATEGORIES have `id` — without this, all keys were "undefined".
+  const configList = categories.length > 0 ? categories : DEFAULT_CATEGORIES;
+  const catConfigMap = Object.fromEntries(
+    configList.map((c) => [(c.name ?? c.id).toLowerCase(), c])
+  );
+
+  // Derive the category list directly from the items that are actually on this menu.
+  // This is the source of truth — it is always consistent with the items array and
+  // is never affected by stale restaurant.categories cache or missing config entries.
+  const uniqueCategoryNames = [
+    ...new Set(
+      items.map((i) => (i.category ?? '').trim().toLowerCase()).filter(Boolean)
+    ),
+  ];
+
+  const CATEGORIES = [
+    { id: 'all', label: 'All', emoji: '🍴' },
+    ...uniqueCategoryNames.map((name) => {
+      const cfg = catConfigMap[name];
+      return {
+        id: name,
+        label: cfg
+          ? cfg.name.charAt(0).toUpperCase() + cfg.name.slice(1)
+          : name.charAt(0).toUpperCase() + name.slice(1),
+        emoji: cfg?.emoji ?? '🍽️',
+      };
+    }),
+  ];
+  const [filter, setFilter]               = useState('all');
+  const [searchQuery, setSearchQuery]     = useState('');
+  const [selectedItem, setSelectedItem]   = useState(null);
+  const [cartItems, setCartItems]         = useState([]);
   const [showImagePreview, setShowImagePreview] = useState(false);
+  const [showCart, setShowCart]           = useState(false);
+  // Tracks which item IDs had "Added" flashed recently
+  const [flashedItems, setFlashedItems]   = useState(new Set());
 
+  // One-time menu view tracking
   useEffect(() => {
-    if (restaurant && restaurant._id) {
-      const viewedKey = `viewed-${restaurant._id}`;
-
-      if (!sessionStorage.getItem(viewedKey)) {
-        fetch("/api/track", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            restaurantId: restaurant._id,
-            type: "menu_viewed",
-          }),
-        }).catch(() => { /* ignore tracking errors */ });
-
-        sessionStorage.setItem(viewedKey, "true");
-      }
+    if (!restaurant?._id) return;
+    const key = `viewed-${restaurant._id}`;
+    if (!sessionStorage.getItem(key)) {
+      fetch('/api/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ restaurantId: restaurant._id, type: 'menu_viewed' }),
+      }).catch(() => {});
+      sessionStorage.setItem(key, 'true');
     }
-  }, [restaurant && restaurant._id]);
-
-  const debouncedSearch = useDebounce(searchQuery, 300);
+  }, [restaurant?._id]);
 
   // Clear cart on unmount
-  useEffect(() => {
-    return () => setCartItems([]);
-  }, []);
+  useEffect(() => () => setCartItems([]), []);
 
-  const [showCart, setShowCart] = useState(false);
-
-  const updateQuantity = (id, newQuantity) => {
-    if (newQuantity <= 0) {
-      setCartItems(prev => prev.filter(item => item._id !== id));
-    } else {
-      setCartItems(prev =>
-        prev.map(item =>
-          item._id === id ? { ...item, quantity: newQuantity } : item
-        )
-      );
-    }
-  };
-
+  // ── Cart helpers ────────────────────────────────────────────────────────────
   const addToCart = useCallback((item) => {
     setCartItems((prev) => {
       const normalized = { ...item, quantity: item.quantity ?? 1 };
@@ -79,46 +108,69 @@ export default function MenuList({ restaurant, items = [], restaurantId }) {
     });
   }, []);
 
-  const handleItemClick = (item) => {
+  const updateQuantity = useCallback((id, newQty) => {
+    setCartItems((prev) =>
+      newQty <= 0
+        ? prev.filter((i) => i._id !== id)
+        : prev.map((i) => (i._id === id ? { ...i, quantity: newQty } : i))
+    );
+  }, []);
+
+  const removeFromCart = useCallback((id) => {
+    setCartItems((prev) => prev.filter((i) => i._id !== id));
+  }, []);
+
+  // Flash "Added" for 1.4s after tapping ADD+
+  const handleAddToCart = useCallback((e, item) => {
+    e.stopPropagation();
+    addToCart(item);
+    setFlashedItems((prev) => new Set([...prev, item._id]));
+    setTimeout(() => {
+      setFlashedItems((prev) => {
+        const next = new Set(prev);
+        next.delete(item._id);
+        return next;
+      });
+    }, 1400);
+  }, [addToCart]);
+
+  // ── Item interaction ────────────────────────────────────────────────────────
+  const handleCardClick = (item) => {
     if (!item) return;
-
-    
-
     setSelectedItem(item);
   };
 
-  const removeFromCart = useCallback((itemId) => {
-    setCartItems((prev) => prev.filter((i) => i._id !== itemId));
-  }, []);
+  // Tapping the image opens full-screen image preview
+  const handleImageClick = (e, item) => {
+    e.stopPropagation();
+    setSelectedItem(item);
+    setShowImagePreview(true);
+  };
 
-  const normalizedDebouncedSearch = (debouncedSearch ?? '').toString().trim().toLowerCase();
+  // ── Filtering ───────────────────────────────────────────────────────────────
+  const debouncedSearch = useDebounce(searchQuery, 300);
+  const normalizedSearch = (debouncedSearch ?? '').toString().trim().toLowerCase();
 
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
-      const category = (item?.category ?? '').toString().toLowerCase();
-      const name = (item?.name ?? '').toString().toLowerCase();
-      const description = (item?.description ?? '').toString().toLowerCase();
-
-      const matchesCategory =
-        filter === 'all' || category === (filter ?? '').toString().toLowerCase();
-
-      const matchesSearch =
-        name.includes(normalizedDebouncedSearch) ||
-        description.includes(normalizedDebouncedSearch);
-
+      const cat  = (item?.category ?? '').toLowerCase();
+      const name = (item?.name ?? '').toLowerCase();
+      const desc = (item?.description ?? '').toLowerCase();
+      const matchesCategory = filter === 'all' || cat === filter;
+      const matchesSearch   = name.includes(normalizedSearch) || desc.includes(normalizedSearch);
       return matchesCategory && matchesSearch;
     });
-  }, [items, filter, normalizedDebouncedSearch]);
+  }, [items, filter, normalizedSearch]);
 
-  const totalCount = items?.length || 0;
+  const cartTotal = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const cartCount = cartItems.reduce((sum, i) => sum + i.quantity, 0);
 
   return (
     <>
-      <main className="max-w-4xl mx-auto pb-24 bg-gradient-to-b from-orange-50/30 via-white to-white min-h-screen">
+      <main className="max-w-4xl mx-auto pb-32 bg-white min-h-screen">
 
-        {/* Enhanced Restaurant Banner */}
-        <div className="relative mb-6 overflow-hidden">
-          {/* Banner with gradient overlay */}
+        {/* ── Restaurant Banner ──────────────────────────────────────────── */}
+        <div className="relative mb-4 overflow-hidden">
           <div className="relative h-48 sm:h-56">
             <Image
               src={restaurant?.logoUrl || '/default-restaurant.jpg'}
@@ -126,48 +178,42 @@ export default function MenuList({ restaurant, items = [], restaurantId }) {
               width={800}
               height={224}
               className="w-full h-full object-cover"
+              priority
             />
-            {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
           </div>
 
-          {/* Restaurant Info Card - Overlapping design */}
+          {/* Overlapping info card */}
           <div className="relative px-4 -mt-16">
-            <div className="bg-white rounded-3xl shadow-2xl p-6 border border-gray-100">
+            <div className="bg-white rounded-3xl shadow-xl p-5 border border-gray-100">
               <div className="flex items-start gap-4">
-                {/* Circular Logo with ring */}
                 <div className="relative flex-shrink-0">
-                  <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-red-500 rounded-full blur-md opacity-50"></div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-red-500 rounded-full blur-md opacity-40" />
                   <Image
                     src={restaurant?.logoUrl || '/default-restaurant.jpg'}
                     alt="Restaurant Logo"
-                    width={80}
-                    height={80}
-                    className="relative w-20 h-20 rounded-full border-4 border-white shadow-lg object-cover"
+                    width={72}
+                    height={72}
+                    className="relative w-[72px] h-[72px] rounded-full border-4 border-white shadow-lg object-cover"
                   />
                 </div>
-                
-                {/* Restaurant Details */}
                 <div className="flex-1 min-w-0">
-                  <h1 className="text-2xl font-black text-gray-900 mb-1 bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                  <h1 className="text-xl font-black text-gray-900 mb-0.5 truncate">
                     {restaurant?.name ?? ''}
                   </h1>
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-1">{restaurant?.address ?? ''}</p>
-                  
-                  {/* Quick Stats */}
-                  <div className="flex flex-wrap gap-3">
-                    <div className="flex items-center gap-1.5 bg-green-50 px-3 py-1.5 rounded-full">
-                      <span className="text-green-600 text-sm">⭐</span>
-                      <span className="text-sm font-semibold text-green-700">4.3</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 bg-orange-50 px-3 py-1.5 rounded-full">
-                      <span className="text-orange-600 text-sm">🍽️</span>
-                      <span className="text-sm font-semibold text-orange-700">{totalCount} Items</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 bg-blue-50 px-3 py-1.5 rounded-full">
-                      <span className="text-blue-600 text-sm">⚡</span>
-                      <span className="text-sm font-semibold text-blue-700">Digital Menu</span>
-                    </div>
+                  <p className="text-xs text-gray-500 mb-3 line-clamp-1">
+                    {restaurant?.address ?? ''}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="inline-flex items-center gap-1 bg-green-50 text-green-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+                      ⭐ 4.3
+                    </span>
+                    <span className="inline-flex items-center gap-1 bg-orange-50 text-orange-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+                      🍽️ {items.length} Items
+                    </span>
+                    <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+                      ⚡ Digital Menu
+                    </span>
                   </div>
                 </div>
               </div>
@@ -175,13 +221,12 @@ export default function MenuList({ restaurant, items = [], restaurantId }) {
           </div>
         </div>
 
-        <div className="px-4">
+        {/* ── Search bar ────────────────────────────────────────────────── */}
+        <div className="px-4 mb-3">
           <HomeIconButton />
-
-          {/* Enhanced Search Bar */}
-          <div className="relative mb-6">
+          <div className="relative">
             <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
@@ -189,134 +234,173 @@ export default function MenuList({ restaurant, items = [], restaurantId }) {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search delicious food..."
-              className="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:border-orange-500 focus:ring-4 focus:ring-orange-100 transition-all duration-200 shadow-sm hover:shadow-md"
+              placeholder="Search dishes..."
+              className="w-full pl-10 pr-10 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 text-sm placeholder-gray-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 focus:bg-white transition-all duration-200"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute inset-y-0 right-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             )}
           </div>
+        </div>
 
-
-          {/* Category Filters - Pill Style */}
-          <div className="mb-6">
-      
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-              {[
-                { id: 'all', label: 'All', emoji: '🍴' },
-                { id: 'veg', label: 'Veg', emoji: '🥗' },
-                { id: 'non-veg', label: 'Non-Veg', emoji: '🍗' },
-                { id: 'drinks', label: 'Drinks', emoji: '🥤' },
-                { id: 'special', label: 'Special', emoji: '⭐' },
-                { id: 'starters', label: 'Starters', emoji: '🍢' }
-              ].map((cat) => (
+        {/* ── Sticky category bar ───────────────────────────────────────── */}
+        <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm">
+          <div className="px-4 py-2.5">
+            <div className="flex gap-2 overflow-x-auto no-scrollbar">
+              {CATEGORIES.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setFilter(cat.id)}
-                  className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 whitespace-nowrap flex items-center gap-2 ${
+                  className={`flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
                     filter === cat.id
-                      ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg scale-105'
-                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-orange-300 hover:shadow-md'
+                      ? 'bg-orange-500 text-white shadow-md scale-105'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-95'
                   }`}
                 >
-                  <span className="text-base">{cat.emoji}</span>
+                  <span className="text-sm">{cat.emoji}</span>
                   {cat.label}
                 </button>
               ))}
             </div>
           </div>
+        </div>
 
-{/* Compact Menu Items */}
-          <div className="space-y-3">
-            {filteredItems.map((item, index) => (
-              <div
-                key={item._id}
-                className="relative overflow-hidden rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer active:scale-98"
-                onClick={() => handleItemClick(item)}
-              >
-                <div className="flex gap-3 p-3">
-                  {/* Image Section */}
-                  <div className="relative flex-shrink-0">
-                    <Image
-                      src={item?.imageUrl ?? '/default-food.jpg'}
-                      alt={item?.name ?? 'Item'}
-                      width={96}
-                      height={96}
-                      className="w-24 h-24 object-cover rounded-xl"
-                    />
+        {/* ── Menu item list ────────────────────────────────────────────── */}
+        <div className="px-4 pt-4 space-y-3">
 
-                    {/* Veg/Non-Veg Indicator */}
-                    <div className="absolute top-1.5 left-1.5">
-                      <div className={`w-4 h-4 border-2 rounded-sm flex items-center justify-center ${
-                        item?.category === 'veg' ? 'border-green-600 bg-white' : 'border-red-600 bg-white'
-                      }`}>
-                        <div className={`w-2 h-2 rounded-full ${
-                          item?.category === 'veg' ? 'bg-green-600' : 'bg-red-600'
-                        }`}></div>
+          {filteredItems.length > 0 ? (
+            filteredItems.map((item) => {
+              const cartItem   = cartItems.find((i) => i._id === item._id);
+              const inCart     = !!cartItem;
+              const justAdded  = flashedItems.has(item._id);
+
+              return (
+                <div
+                  key={item._id}
+                  className="relative bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md active:scale-[0.99] transition-all duration-200 cursor-pointer overflow-hidden"
+                  onClick={() => handleCardClick(item)}
+                >
+                  <div className="flex gap-3 p-3">
+
+                    {/* ── Food image (tap → full-screen preview) ─────── */}
+                    <div
+                      className="relative flex-shrink-0 cursor-zoom-in"
+                      onClick={(e) => handleImageClick(e, item)}
+                    >
+                      <Image
+                        src={item?.imageUrl ?? '/default-food.jpg'}
+                        alt={item?.name ?? 'Menu item'}
+                        width={96}
+                        height={96}
+                        className="w-24 h-24 object-cover rounded-xl"
+                        loading="lazy"
+                      />
+                      {/* Veg/non-veg dot */}
+                      <div className="absolute top-1.5 left-1.5">
+                        <VegIndicator category={item?.category} />
+                      </div>
+                      {/* Zoom hint overlay */}
+                      <div className="absolute inset-0 rounded-xl bg-black/0 hover:bg-black/10 transition-colors duration-150 flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white opacity-0 hover:opacity-100 transition-opacity drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Content Section */}
-                  <div className="flex flex-col justify-between flex-1 min-w-0">
-                    {/* Title & Badges */}
-                    <div>
-                      <h3 className="text-sm font-bold text-gray-900 mb-1 line-clamp-1">
-                        {item?.name ?? ''}
-                      </h3>
-                      
-                      <div className="flex flex-wrap gap-1.5 mb-2">
-                        {item?.bestseller && (
-                          <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-semibold">
-                            ⭐ Bestseller
-                          </span>
+                    {/* ── Item content ───────────────────────────────── */}
+                    <div className="flex flex-col justify-between flex-1 min-w-0 py-0.5">
+                      <div>
+                        {/* Name + bestseller badge */}
+                        <div className="flex items-start gap-1.5 mb-1">
+                          <h3 className="text-sm font-bold text-gray-900 line-clamp-1 flex-1">
+                            {item?.name ?? ''}
+                          </h3>
+                          {item?.bestseller && (
+                            <span className="flex-shrink-0 text-xs bg-amber-50 text-amber-600 border border-amber-200 px-1.5 py-0.5 rounded-md font-semibold leading-none">
+                              🔥 Best
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Description */}
+                        {item?.description ? (
+                          <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed mb-2">
+                            {item.description}
+                          </p>
+                        ) : (
+                          <div className="mb-2" />
+                        )}
+                      </div>
+
+                      {/* Price + cart button row */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-base font-black text-gray-900">
+                          ₹{item?.price ?? 0}
+                        </span>
+
+                        {/* In-cart: show quantity stepper. Not in cart: show ADD+ */}
+                        {inCart ? (
+                          <div
+                            className="flex items-center gap-0 bg-orange-500 rounded-lg overflow-hidden shadow-sm"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              className="w-8 h-8 flex items-center justify-center text-white font-bold text-lg hover:bg-orange-600 active:bg-orange-700 transition-colors"
+                              onClick={(e) => { e.stopPropagation(); updateQuantity(item._id, cartItem.quantity - 1); }}
+                            >
+                              −
+                            </button>
+                            <span className="w-7 text-center text-white text-sm font-bold">
+                              {cartItem.quantity}
+                            </span>
+                            <button
+                              className="w-8 h-8 flex items-center justify-center text-white font-bold text-lg hover:bg-orange-600 active:bg-orange-700 transition-colors"
+                              onClick={(e) => { e.stopPropagation(); updateQuantity(item._id, cartItem.quantity + 1); }}
+                            >
+                              +
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 shadow-sm active:scale-95 ${
+                              justAdded
+                                ? 'bg-green-500 text-white scale-105'
+                                : 'bg-white border-2 border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white'
+                            }`}
+                            onClick={(e) => handleAddToCart(e, item)}
+                          >
+                            {justAdded ? '✓ Added' : 'ADD +'}
+                          </button>
                         )}
                       </div>
                     </div>
-                    
-                    {/* Price & Add Button */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <span className="text-lg font-black text-green-600">
-                          ₹{item?.price ?? 0}
-                        </span>
-                      </div>
-
-                      <button
-                        className="px-5 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-lg text-xs shadow-md hover:shadow-lg active:scale-95 transition-all"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          addToCart(item);
-                        }}
-                      >
-                        ADD +
-                      </button>
-                    </div>
                   </div>
                 </div>
+              );
+            })
+          ) : (
+            /* Empty state */
+            <div className="text-center py-16">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
               </div>
-            ))}
-          </div>
-
-          {/* Empty State */}
-          {filteredItems.length === 0 && (
-            <div className="text-center py-20">
-              <div className="text-6xl mb-4 animate-bounce">🔍</div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">No items found</h3>
-              <p className="text-gray-500">Try adjusting your search or filters</p>
+              <h3 className="text-base font-semibold text-gray-700 mb-1">No items found</h3>
+              <p className="text-sm text-gray-400">Try adjusting your search or filters</p>
             </div>
           )}
         </div>
 
-        {/* Modals */}
-        {selectedItem && (
+        {/* ── Modals ────────────────────────────────────────────────────── */}
+        {selectedItem && !showImagePreview && (
           <ItemDetailModal
             item={selectedItem}
             onClose={() => setSelectedItem(null)}
@@ -325,74 +409,64 @@ export default function MenuList({ restaurant, items = [], restaurantId }) {
           />
         )}
 
-        {showImagePreview && (
+        {showImagePreview && selectedItem && (
           <ImagePreviewModal
-            imageUrl={selectedItem?.imageUrl}
-            onClose={() => setShowImagePreview(false)}
+            imageUrl={selectedItem.imageUrl}
+            onClose={() => {
+              setShowImagePreview(false);
+              setSelectedItem(null);
+            }}
           />
         )}
 
-        {/* Enhanced Floating Cart */}
-        {cartItems.length > 0 && !selectedItem && (
-          <>
-            <div
-              className="fixed bottom-6 right-6 z-40 group cursor-pointer"
-              onClick={() => setShowCart(!showCart)}
-            >
-              {/* Pulsing background effect */}
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 opacity-20 animate-pulse"></div>
-              
-              {/* Main Cart Button */}
-              <div className="relative bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-2xl px-5 py-4 flex items-center gap-3 shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 min-w-[160px]">
-                {/* Cart Icon with Badge */}
-                <div className="relative">
-                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                  </svg>
-                  <div className="absolute -top-2 -right-2 min-w-[22px] h-5 bg-white text-orange-600 text-xs font-black rounded-full flex items-center justify-center px-1.5 shadow-lg">
-                    {cartItems.length}
-                  </div>
-                </div>
-
-                {/* Cart Info */}
-                <div className="flex flex-col items-start leading-tight">
-                  <span className="text-xs font-semibold text-white/90">
-                    {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}
-                  </span>
-                  <span className="text-lg font-black text-white">
-                    ₹{cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}
-                  </span>
-                </div>
-
-                {/* Chevron */}
-                <svg 
-                  className={`w-5 h-5 transition-transform duration-300 ${showCart ? 'rotate-180' : ''}`}
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Cart Modal */}
-            {showCart && (
-              <CartModal
-                className="overflow-y-auto max-h-[60vh] px-6 py-4"
-                cartItems={cartItems}
-                showCart={showCart}
-                setShowCart={setShowCart}
-                updateQuantity={updateQuantity}
-                setCartItems={setCartItems}
-                restaurantId={restaurantId}
-                tableId=""
-              />
-            )}
-          </>
+        {showCart && (
+          <CartModal
+            cartItems={cartItems}
+            showCart={showCart}
+            setShowCart={setShowCart}
+            updateQuantity={updateQuantity}
+            setCartItems={setCartItems}
+            restaurantId={restaurantId}
+            tableId=""
+          />
         )}
       </main>
 
+      {/* ── Sticky full-width cart bar ─────────────────────────────────── */}
+      {cartItems.length > 0 && !selectedItem && !showImagePreview && !showCart && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-4 pt-2 bg-gradient-to-t from-white via-white/95 to-transparent pointer-events-none">
+          <button
+            onClick={() => setShowCart(true)}
+            className="pointer-events-auto w-full max-w-4xl mx-auto flex items-center justify-between bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-2xl px-5 py-4 shadow-2xl active:scale-[0.98] transition-transform duration-150"
+          >
+            {/* Left — item count */}
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
+                <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] bg-white text-orange-600 text-[10px] font-black rounded-full flex items-center justify-center px-1">
+                  {cartCount}
+                </span>
+              </div>
+              <span className="text-sm font-semibold">
+                {cartCount} {cartCount === 1 ? 'item' : 'items'}
+              </span>
+            </div>
+
+            {/* Right — total + CTA */}
+            <div className="flex items-center gap-3">
+              <span className="text-lg font-black">₹{cartTotal}</span>
+              <div className="flex items-center gap-1 bg-white/20 rounded-xl px-3 py-1.5">
+                <span className="text-sm font-bold">View Cart</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+          </button>
+        </div>
+      )}
     </>
   );
 }

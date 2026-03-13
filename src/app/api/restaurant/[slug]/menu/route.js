@@ -15,15 +15,25 @@ export async function GET(_, context) {
     
     const items = await MenuItem.find({ restaurantId: restaurant._id });
     
+    const categories = restaurant.categories && restaurant.categories.length > 0
+      ? [...restaurant.categories].sort((a, b) => a.order - b.order)
+      : [
+          { _id: 'veg',     name: 'veg',      emoji: '🥗', order: 0 },
+          { _id: 'non-veg', name: 'non-veg',  emoji: '🍗', order: 1 },
+          { _id: 'drinks',  name: 'drinks',   emoji: '🥤', order: 2 },
+          { _id: 'special', name: 'special',  emoji: '⭐', order: 3 },
+          { _id: 'starters',name: 'starters', emoji: '🍢', order: 4 },
+        ];
+
     return Response.json({
       success: true,
       restaurant: {
-        _id: restaurant._id, 
+        _id: restaurant._id,
         name: restaurant.name,
         address: restaurant.address,
         logoUrl: restaurant.logoUrl,
-        // Add this line - it will work even if subdomain field doesn't exist yet
         subdomain: restaurant.subdomain || restaurant.slug,
+        categories,
       },
       items,
     });

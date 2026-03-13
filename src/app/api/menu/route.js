@@ -46,7 +46,7 @@ export async function GET(req) {
 
     // Fetch restaurant details
     const restaurant = await Restaurant.findById(decoded.id).select(
-      "_id name address logoUrl slug"
+      "_id name address logoUrl slug categories"
     );
 
     return Response.json({ success: true, items, restaurant });

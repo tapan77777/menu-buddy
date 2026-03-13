@@ -56,6 +56,13 @@ const RestaurantSchema = new mongoose.Schema({
   
   // Keep your existing razorpayPaymentId for backward compatibility
   razorpayPaymentId: String,
+
+  // Custom menu categories per restaurant
+  categories: [{
+    name: { type: String, required: true },
+    emoji: { type: String, default: '🍽️' },
+    order: { type: Number, default: 0 },
+  }],
 }, { timestamps: true });
 
 
