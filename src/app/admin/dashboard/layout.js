@@ -3,14 +3,17 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { BarChart2, LayoutDashboard, LogOut, ShoppingBag, UtensilsCrossed } from "lucide-react";
+import { BarChart2, LayoutDashboard, LogOut, Settings, ShoppingBag, UtensilsCrossed } from "lucide-react";
 
 const NAV = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/admin/dashboard/orders", label: "Orders", icon: ShoppingBag, exact: false },
-  { href: "/admin/dashboard/menuManagement", label: "Menu", icon: UtensilsCrossed, exact: false },
-  { href: "/admin/dashboard/analytics", label: "Analytics", icon: BarChart2, exact: false },
+  { href: "/admin/dashboard",                  label: "Dashboard", icon: LayoutDashboard, exact: true  },
+  { href: "/admin/dashboard/orders",           label: "Orders",    icon: ShoppingBag,    exact: false },
+  { href: "/admin/dashboard/menuManagement",   label: "Menu",      icon: UtensilsCrossed, exact: false },
+  { href: "/admin/dashboard/analytics",        label: "Analytics", icon: BarChart2,      exact: false },
 ];
+
+// Settings lives in the sidebar only — not in the mobile tab bar (tab bar stays 4 cols)
+const SETTINGS_NAV = { href: "/admin/dashboard/settings", label: "Settings", icon: Settings };
 
 export default function DashboardLayout({ children }) {
   const pathname = usePathname();
@@ -18,13 +21,16 @@ export default function DashboardLayout({ children }) {
   const [restaurant, setRestaurant] = useState(null);
 
   useEffect(() => {
+    let mounted = true;
     fetch("/api/admin/me")
       .then((r) => r.json())
       .then((res) => {
+        if (!mounted) return;
         if (res.success) setRestaurant(res.admin);
         else router.replace("/login");
       })
-      .catch(() => router.replace("/login"));
+      .catch(() => { if (mounted) router.replace("/login"); });
+    return () => { mounted = false; };
   }, []);
 
   const handleLogout = async () => {
@@ -45,7 +51,7 @@ export default function DashboardLayout({ children }) {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* ── Desktop Sidebar ──────────────────────────────────────────── */}
-      <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full w-56 bg-white border-r border-gray-100 z-30">
+      <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full w-56 bg-white border-r border-gray-100 z-40">
         {/* Brand header */}
         <div className="flex items-center gap-3 px-5 h-16 border-b border-gray-100 shrink-0">
           <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-red-500 rounded-lg flex items-center justify-center shadow-sm shrink-0">
@@ -88,8 +94,37 @@ export default function DashboardLayout({ children }) {
           })}
         </nav>
 
-        {/* Bottom: profile + logout */}
+        {/* Bottom: plan badge + settings + profile + logout */}
         <div className="px-3 pb-5 border-t border-gray-100 pt-3 shrink-0 space-y-1">
+          {/* Plan badge */}
+          {restaurant?.plan && restaurant.plan !== "free" && (
+            <div className={`mx-3 mb-1 text-center text-[10px] font-bold px-2 py-1 rounded-lg ${
+              restaurant.plan === "pro" ? "bg-orange-100 text-orange-600" : "bg-blue-100 text-blue-600"
+            }`}>
+              {restaurant.plan === "pro" ? "👑 Pro Plan" : "⚡ Basic Plan"}
+            </div>
+          )}
+
+          {/* Settings link */}
+          {(() => {
+            const active = pathname.startsWith(SETTINGS_NAV.href);
+            return (
+              <Link
+                href={SETTINGS_NAV.href}
+                className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
+                  active ? "bg-orange-50 text-orange-600" : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <SETTINGS_NAV.icon
+                  className={`w-4 h-4 shrink-0 ${active ? "text-orange-500" : "text-gray-400 group-hover:text-gray-600"}`}
+                />
+                <span className="flex-1">{SETTINGS_NAV.label}</span>
+                {active && <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0" />}
+              </Link>
+            );
+          })()}
+
+          {/* Profile */}
           <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-gray-50">
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center text-white text-[11px] font-bold shrink-0">
               {initials}
@@ -119,10 +154,12 @@ export default function DashboardLayout({ children }) {
       </div>
 
       {/* ── Mobile bottom tab bar ────────────────────────────────────── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-30">
-        <div className="grid grid-cols-4 h-16">
-          {NAV.map((item) => {
-            const active = isActive(item);
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-40">
+        <div className="grid grid-cols-5 h-16">
+          {[...NAV, SETTINGS_NAV].map((item) => {
+            const active = item.exact
+              ? pathname === item.href
+              : pathname.startsWith(item.href);
             return (
               <Link
                 key={item.href}

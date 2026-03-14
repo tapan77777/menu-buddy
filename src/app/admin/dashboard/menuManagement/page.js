@@ -28,7 +28,7 @@ function Toast({ toast }) {
     info:    'bg-blue-600',
   };
   return (
-    <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-2 ${colors[toast.type] || colors.info} text-white text-sm font-medium px-5 py-3 rounded-2xl shadow-2xl`}>
+    <div className={`fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-2 ${colors[toast.type] || colors.info} text-white text-sm font-medium px-5 py-3 rounded-2xl shadow-2xl`}>
       {toast.type === 'success' && <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>}
       {toast.type === 'error'   && <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>}
       {toast.msg}
@@ -55,7 +55,7 @@ function ItemCard({ item, onEdit, onDelete, categoryEmoji }) {
         )}
         {/* Overlay actions on hover */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200" />
-        <div className="absolute top-2.5 right-2.5 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <div className="absolute top-2.5 right-2.5 flex gap-1.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
           <button
             onClick={() => onEdit(item)}
             className="w-8 h-8 bg-white rounded-xl flex items-center justify-center shadow-md hover:bg-orange-50 hover:text-orange-600 transition-colors"
@@ -115,8 +115,8 @@ function ItemCard({ item, onEdit, onDelete, categoryEmoji }) {
 function ItemRow({ item, onEdit, onDelete, categoryEmoji }) {
   const [deleting, setDeleting] = useState(false);
   return (
-    <div className="flex items-center gap-4 bg-white rounded-xl border border-slate-100 px-4 py-3 hover:shadow-sm hover:border-slate-200 transition-all duration-150 group">
-      <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
+    <div className="flex items-center gap-2 sm:gap-4 bg-white rounded-xl border border-slate-100 px-3 sm:px-4 py-3 hover:shadow-sm hover:border-slate-200 transition-all duration-150 group">
+      <div className="relative w-11 h-11 sm:w-14 sm:h-14 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
         {item.imageUrl ? (
           <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
         ) : (
@@ -133,19 +133,20 @@ function ItemRow({ item, onEdit, onDelete, categoryEmoji }) {
       <span className="text-xs text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full capitalize flex-shrink-0 hidden sm:block">
         {categoryEmoji} {item.category}
       </span>
-      <span className="font-bold text-slate-900 text-sm flex-shrink-0 w-16 text-right">₹{item.price}</span>
-      <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+      <span className="font-bold text-slate-900 text-sm flex-shrink-0 w-12 sm:w-16 text-right">₹{item.price}</span>
+      {/* Always visible — hover-only is inaccessible on touch devices */}
+      <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
         <button
           onClick={() => onEdit(item)}
-          className="px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-orange-100 hover:text-orange-700 rounded-lg transition-colors"
+          className="px-2 sm:px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-orange-100 hover:text-orange-700 active:scale-95 rounded-lg transition-all"
         >
           Edit
         </button>
         <button
           onClick={async () => { setDeleting(true); await onDelete(item._id); setDeleting(false); }}
-          className="px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-red-100 hover:text-red-700 rounded-lg transition-colors"
+          className="px-2 sm:px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-red-100 hover:text-red-700 active:scale-95 rounded-lg transition-all"
         >
-          {deleting ? <Spinner sm /> : 'Delete'}
+          {deleting ? <Spinner sm /> : 'Del'}
         </button>
       </div>
     </div>
@@ -492,7 +493,7 @@ export default function MenuManagement() {
     <div className="min-h-screen bg-slate-50">
 
       {/* ── Sticky Header ─────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm">
+      <header className="sticky top-0 z-20 bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-4">
 
           {/* Back */}
@@ -554,10 +555,10 @@ export default function MenuManagement() {
             { label: 'Categories',   value: restaurantCategories.length, icon: '🗂️', color: 'bg-purple-50 text-purple-700' },
             { label: 'Filtered Now', value: filteredItems.length, icon: '🔍', color: 'bg-emerald-50 text-emerald-700' },
           ].map((s) => (
-            <div key={s.label} className="bg-white rounded-2xl border border-slate-100 px-4 py-3.5 flex items-center gap-3">
+            <div key={s.label} className="bg-white rounded-2xl border border-slate-100 px-3 sm:px-4 py-3 sm:py-3.5 flex items-center gap-2 sm:gap-3">
               <span className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0 ${s.color}`}>{s.icon}</span>
               <div>
-                <p className="text-xl font-black text-slate-900 leading-none">{s.value}</p>
+                <p className="text-lg sm:text-xl font-black text-slate-900 leading-none">{s.value}</p>
                 <p className="text-xs text-slate-400 mt-0.5">{s.label}</p>
               </div>
             </div>

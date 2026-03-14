@@ -243,7 +243,7 @@ export default function OrdersPage() {
   // Loading State
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-green-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block p-6 bg-white rounded-3xl shadow-2xl mb-6">
             <ChefHat className="w-16 h-16 text-green-600 animate-bounce" />
@@ -260,9 +260,9 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-green-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Sticky Header */}
-      <div className="bg-white shadow-md sticky top-0 z-20 border-b border-gray-200">
+      <div className="bg-white shadow-md sticky top-0 z-10 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

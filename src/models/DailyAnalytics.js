@@ -6,7 +6,8 @@ const dailyAnalyticsSchema = new mongoose.Schema({
   menuViews: { type: Number, default: 0 },
   itemClicks: { type: Number, default: 0 },
   addToCart: { type: Number, default: 0 },
-  orders: { type: Number, default: 0 },
+  orders:       { type: Number, default: 0 },
+  missedOrders: { type: Number, default: 0 },
   // { [itemId]: { name: string, clicks: number } }
   topItems: { type: mongoose.Schema.Types.Mixed, default: {} },
   createdAt: { type: Date, default: Date.now, expires: 2592000 }, // 30-day TTL

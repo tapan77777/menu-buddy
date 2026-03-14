@@ -66,7 +66,7 @@ export default function AnalyticsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
                 Menu Analytics
               </h1>
               <p className="text-sm text-gray-500 mt-1">
@@ -357,14 +357,14 @@ export default function AnalyticsPage() {
 
 function EngagementCard({ emoji, label, value, gradient, bg }) {
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-5 hover:shadow-xl transition-all duration-300 group relative overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-5 hover:shadow-xl transition-all duration-300 group relative overflow-hidden">
       <div className={`absolute top-0 right-0 w-24 h-24 ${bg} rounded-full opacity-40 -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-500`} />
       <div className="relative">
-        <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br ${gradient} mb-3 group-hover:scale-110 transition-transform`}>
-          <span className="text-lg">{emoji}</span>
+        <div className={`inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br ${gradient} mb-3 group-hover:scale-110 transition-transform`}>
+          <span className="text-base sm:text-lg">{emoji}</span>
         </div>
-        <p className="text-2xl font-black text-gray-800">{value.toLocaleString()}</p>
-        <p className="text-xs text-gray-500 font-medium mt-0.5">{label}</p>
+        <p className="text-xl sm:text-2xl font-black text-gray-800 truncate">{value.toLocaleString()}</p>
+        <p className="text-xs text-gray-500 font-medium mt-0.5 leading-tight">{label}</p>
       </div>
     </div>
   );

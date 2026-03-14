@@ -6,18 +6,32 @@ const RestaurantSchema = new mongoose.Schema({
   email: { type: String, unique: true },
   password: { type: String, select: false },
   slug: { type: String, unique: true },
-  
-  // ✅ ADD THIS LINE - Add subdomain field right after slug
-  subdomain: { 
-    type: String, 
-    unique: true, 
-    sparse: true // Allows null values while maintaining uniqueness for existing restaurants
+
+  subdomain: {
+    type: String,
+    unique: true,
+    sparse: true,
   },
-  
+
   address: String,
   logoUrl: String,
-  
-  // ✅ Enhanced subscription fields (replace your existing plan fields)
+
+  // ── Subscription plan (enforced) ──────────────────────────────
+  plan: {
+    type: String,
+    enum: ["free", "basic", "pro"],
+    default: "free",
+  },
+  dailyOrderLimit: { type: Number, default: 30 },
+  planStart: Date,
+  planEnd: Date,
+
+  // ── Daily order counters (reset each day) ─────────────────────
+  ordersToday:       { type: Number, default: 0 },
+  missedOrdersToday: { type: Number, default: 0 },
+  lastOrderReset:    { type: String, default: null }, // "YYYY-MM-DD"
+
+  // ── Legacy billing fields (Razorpay / history) ────────────────
   currentPlan: {
     planId: { type: mongoose.Schema.Types.ObjectId, ref: 'Plan' },
     name: { type: String, default: 'freemium' }, // freemium, basic, pro, gold
