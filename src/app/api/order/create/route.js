@@ -1,6 +1,7 @@
 import { connectToDB } from "@/lib/db";
 import { notifyAdmin } from "@/lib/orderEvents"; // ✅ CORRECT IMPORT
 import Order from "@/models/Order";
+import DailyAnalytics from "@/models/DailyAnalytics";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
@@ -43,6 +44,14 @@ export async function POST(req) {
       type: "new_order",
       order
     });
+
+    // Track order in daily analytics (fire-and-forget, non-blocking)
+    const date = new Date().toISOString().split("T")[0];
+    DailyAnalytics.updateOne(
+      { restaurantId, date },
+      { $inc: { orders: 1 } },
+      { upsert: true }
+    ).catch(() => {});
 
     return NextResponse.json({ success: true, order });
   } catch (err) {

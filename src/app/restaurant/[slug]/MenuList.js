@@ -81,15 +81,15 @@ export default function MenuList({ restaurant, items = [], restaurantId, categor
   // Tracks which item IDs had "Added" flashed recently
   const [flashedItems, setFlashedItems]   = useState(new Set());
 
-  // One-time menu view tracking
+  // One-time menu view tracking per session
   useEffect(() => {
     if (!restaurant?._id) return;
     const key = `viewed-${restaurant._id}`;
     if (!sessionStorage.getItem(key)) {
-      fetch('/api/track', {
+      fetch('/api/analytics/menu-view', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ restaurantId: restaurant._id, type: 'menu_viewed' }),
+        body: JSON.stringify({ restaurantId: restaurant._id }),
       }).catch(() => {});
       sessionStorage.setItem(key, 'true');
     }
@@ -132,12 +132,28 @@ export default function MenuList({ restaurant, items = [], restaurantId, categor
         return next;
       });
     }, 1400);
-  }, [addToCart]);
+    // Track add-to-cart (fire-and-forget)
+    fetch('/api/analytics/add-to-cart', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ restaurantId: restaurantId || restaurant?._id }),
+    }).catch(() => {});
+  }, [addToCart, restaurantId, restaurant?._id]);
 
   // ── Item interaction ────────────────────────────────────────────────────────
   const handleCardClick = (item) => {
     if (!item) return;
     setSelectedItem(item);
+    // Track item click (fire-and-forget)
+    fetch('/api/analytics/item-click', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        restaurantId: restaurantId || restaurant?._id,
+        itemId: item._id,
+        itemName: item.name,
+      }),
+    }).catch(() => {});
   };
 
   // Tapping the image opens full-screen image preview
