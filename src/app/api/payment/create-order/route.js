@@ -10,11 +10,6 @@ export const PLANS = {
   pro:   { name: "Pro",   amount: 99900,  dailyLimit: Infinity, label: "₹999/month" },
 };
 
-const razorpay = new Razorpay({
-  key_id:     process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
-
 export async function POST(req) {
   try {
     // ── Auth ─────────────────────────────────────────────────────────────────
@@ -46,6 +41,11 @@ export async function POST(req) {
     }
 
     // ── Create Razorpay order ─────────────────────────────────────────────────
+    const razorpay = new Razorpay({
+      key_id:     process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
+    });
+
     const order = await razorpay.orders.create({
       amount:   planConfig.amount,   // in paise
       currency: "INR",
