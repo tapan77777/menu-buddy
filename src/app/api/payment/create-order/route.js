@@ -49,7 +49,8 @@ export async function POST(req) {
     const order = await razorpay.orders.create({
       amount:   planConfig.amount,   // in paise
       currency: "INR",
-      receipt:  `mb_${decoded.id}_${plan}_${Date.now()}`,
+      // Razorpay receipt must be ≤ 40 characters
+      receipt: `mb_${plan}_${Date.now()}`,
       notes: {
         restaurantId: decoded.id,
         restaurantName: restaurant.name,
