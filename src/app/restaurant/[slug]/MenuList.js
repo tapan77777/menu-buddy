@@ -3,6 +3,7 @@
 import HomeIconButton from '@/components/HomeIconButton';
 import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
 const ItemDetailModal  = dynamic(() => import('@/components/ItemDetailModal'),  { ssr: false });
@@ -41,6 +42,8 @@ const DEFAULT_CATEGORIES = [
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function MenuList({ restaurant, items = [], restaurantId, categories = [] }) {
+  const searchParams = useSearchParams();
+  const tableFromUrl = searchParams.get('table') ?? '';
   // Build a lookup map from the restaurant's category config (for emoji + display label).
   // Fall back to DEFAULT_CATEGORIES when the restaurant has no saved config yet.
   // Use (c.name ?? c.id) so both shapes work: restaurant categories have `name`,
@@ -443,7 +446,7 @@ export default function MenuList({ restaurant, items = [], restaurantId, categor
             updateQuantity={updateQuantity}
             setCartItems={setCartItems}
             restaurantId={restaurantId}
-            tableId=""
+            tableId={tableFromUrl}
           />
         )}
       </main>

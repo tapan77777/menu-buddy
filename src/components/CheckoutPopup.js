@@ -1,642 +1,611 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-// LocalStorage Keys
-const ACTIVE_ORDER_KEY = "activeOrderId";
+const ACTIVE_ORDER_KEY  = "activeOrderId";
 const ACTIVE_STATUS_KEY = "activeOrderStatus";
 
-export default function CheckoutPopup({
-  cartItems,
-  restaurantId,
-  tableId,
-  onClose,
-}) {
-  const [view, setView] = useState("review"); // review | placing | tracking
-  const [order, setOrder] = useState(null);
-  const [status, setStatus] = useState("pending");
-  const [minimized, setMinimized] = useState(false);
-  const [extraItems, setExtraItems] = useState([]);
-  const [selectedTable, setSelectedTable] = useState(tableId || null);
+// How long (ms) to show the celebration screen before auto-closing
+const CELEBRATION_DURATION = 4500;
 
+// ── Step definitions ──────────────────────────────────────────────────────────
+const STEPS = [
+  { key: "pending",   label: "Received",  icon: "🧾", desc: "Waiting for the restaurant to accept your order…"    },
+  { key: "accepted",  label: "Accepted",  icon: "✅", desc: "Order accepted! Getting ready to cook."               },
+  { key: "preparing", label: "Cooking",   icon: "👨‍🍳", desc: "Your food is being freshly prepared."                 },
+  { key: "ready",     label: "Ready!",    icon: "🔔", desc: "Your order is ready — please collect at the counter." },
+  { key: "completed", label: "Done",      icon: "🎉", desc: "Enjoy your meal!"                                     },
+];
 
-  // ------------------------------------------------------------
-  // 1️⃣ Restore active order (persistent popup)
-  // ------------------------------------------------------------
-useEffect(() => {
-  const savedOrderId = localStorage.getItem(ACTIVE_ORDER_KEY);
-  const savedStatus = localStorage.getItem(ACTIVE_STATUS_KEY);
-
-  // 🔥 DO NOT restore finished orders
-  if (
-    savedOrderId &&
-    !["completed", "rejected"].includes(savedStatus)
-  ) {
-    setView("tracking");
-    setOrder({ _id: savedOrderId, orderId: savedOrderId });
-    setStatus(savedStatus || "pending");
-  } else {
-    // 🔥 Cleanup just in case
-    localStorage.removeItem(ACTIVE_ORDER_KEY);
-    localStorage.removeItem(ACTIVE_STATUS_KEY);
-  }
-}, []);
-
-  // ------------------------------------------------------------
-  // 2️⃣ Place Order
-  // ------------------------------------------------------------
-async function placeOrder() {
-  // 🔥 restore device session
-  const deviceSessionId = getOrCreateDeviceId();
-
-  // 🔥 clear old active order (important while testing)
-  localStorage.removeItem(ACTIVE_ORDER_KEY);
-  localStorage.removeItem(ACTIVE_STATUS_KEY);
-
-  setView("placing");
-
-  const totalAmount = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
-
-  const payload = {
-    restaurantId,
-    tableId: selectedTable, // ✅ table now works
-    deviceSessionId,        // ✅ now defined
-    totalAmount,
-    items: cartItems.map((i) => ({
-      name: i.name,
-      price: i.price,
-      qty: i.quantity,
-      itemId: i._id,
-    })),
-  };
-
-  const res = await fetch("/api/order/create", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  const data = await res.json();
-
-  if (!data.success) {
-    alert("Failed to place order");
-    setView("review");
-    return;
-  }
-
-  setOrder(data.order);
-  setStatus(data.order.status);
-  setView("tracking");
-
-  localStorage.setItem(ACTIVE_ORDER_KEY, data.order._id);
-  localStorage.setItem(ACTIVE_STATUS_KEY, data.order.status);
+function stepIndex(status) {
+  const idx = STEPS.findIndex((s) => s.key === status);
+  return idx === -1 ? 0 : idx;
 }
 
+// ── Main component ────────────────────────────────────────────────────────────
+export default function CheckoutPopup({ cartItems, restaurantId, tableId, onClose }) {
+  const [view,          setView]          = useState("review");   // review | placing | confirmed | tracking | celebration
+  const [order,         setOrder]         = useState(null);
+  const [status,        setStatus]        = useState("pending");
+  const [minimized,     setMinimized]     = useState(false);
+  const [selectedTable, setSelectedTable] = useState(tableId || "");
+  const [tableInput,    setTableInput]    = useState(tableId ? String(tableId) : "");
+  const [error,         setError]         = useState(null);
+  const [countdown,     setCountdown]     = useState(Math.ceil(CELEBRATION_DURATION / 1000));
+  const [closing,       setClosing]       = useState(false);      // fade-out flag
+  const confirmedTimer    = useRef(null);
+  const celebrationTimer  = useRef(null);
+  const countdownInterval = useRef(null);
 
+  const total = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
 
-  // ------------------------------------------------------------
-  // 3️⃣ SSE — Live Order Status (NO AUTO CLOSE)
-  // ------------------------------------------------------------
+  // ── Restore active order on mount ──────────────────────────────────────────
   useEffect(() => {
-    if (!order?._id) return;
+    const savedId     = localStorage.getItem(ACTIVE_ORDER_KEY);
+    const savedStatus = localStorage.getItem(ACTIVE_STATUS_KEY);
+    if (savedId && !["completed", "rejected"].includes(savedStatus)) {
+      setView("tracking");
+      setOrder({ _id: savedId });
+      setStatus(savedStatus || "pending");
+    } else {
+      localStorage.removeItem(ACTIVE_ORDER_KEY);
+      localStorage.removeItem(ACTIVE_STATUS_KEY);
+    }
+    return () => {
+      clearTimeout(confirmedTimer.current);
+      clearTimeout(celebrationTimer.current);
+      clearInterval(countdownInterval.current);
+    };
+  }, []);
 
-    const stream = new EventSource(
-      `/api/order/events-customer?orderId=${order._id}`
-    );
+  // ── When status hits "completed" → switch to celebration then auto-close ───
+  useEffect(() => {
+    if (status !== "completed") return;
 
-    stream.onmessage = (event) => {
-      if (event.data === "connected") return;
+    // Clean up localStorage immediately
+    localStorage.removeItem(ACTIVE_ORDER_KEY);
+    localStorage.removeItem(ACTIVE_STATUS_KEY);
 
-      const data = JSON.parse(event.data);
-      setStatus(data.status);
-      localStorage.setItem(ACTIVE_STATUS_KEY, data.status);
+    setView("celebration");
+    setCountdown(Math.ceil(CELEBRATION_DURATION / 1000));
+
+    // Tick countdown every second
+    countdownInterval.current = setInterval(() => {
+      setCountdown((c) => Math.max(0, c - 1));
+    }, 1000);
+
+    // Fade-out then call onClose
+    celebrationTimer.current = setTimeout(() => {
+      clearInterval(countdownInterval.current);
+      setClosing(true);
+      setTimeout(() => onClose(), 400);
+    }, CELEBRATION_DURATION);
+
+    return () => {
+      clearInterval(countdownInterval.current);
+      clearTimeout(celebrationTimer.current);
+    };
+  }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Place order ────────────────────────────────────────────────────────────
+  async function placeOrder() {
+    setError(null);
+    setView("placing");
+
+    const deviceSessionId = getOrCreateDeviceId();
+    localStorage.removeItem(ACTIVE_ORDER_KEY);
+    localStorage.removeItem(ACTIVE_STATUS_KEY);
+
+    const payload = {
+      restaurantId,
+      tableId: selectedTable,
+      deviceSessionId,
+      totalAmount: total,
+      items: cartItems.map((i) => ({
+        name:   i.name,
+        price:  i.price,
+        qty:    i.quantity,
+        itemId: i._id,
+      })),
     };
 
+    try {
+      const res  = await fetch("/api/order/create", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        const msg = data.limitReached
+          ? "The restaurant is at full capacity right now. Please try again in a little while."
+          : (data.error || "Failed to place order. Please try again.");
+        setError(msg);
+        setView("review");
+        return;
+      }
+
+      setOrder(data.order);
+      setStatus(data.order.status);
+      localStorage.setItem(ACTIVE_ORDER_KEY,  data.order._id);
+      localStorage.setItem(ACTIVE_STATUS_KEY, data.order.status);
+
+      // Brief "confirmed" flash → then tracking
+      setView("confirmed");
+      confirmedTimer.current = setTimeout(() => setView("tracking"), 1800);
+
+    } catch {
+      setError("Network error. Please check your connection and try again.");
+      setView("review");
+    }
+  }
+
+  // ── SSE live status ────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!order?._id) return;
+    const stream = new EventSource(`/api/order/events-customer?orderId=${order._id}`);
+    stream.onmessage = (e) => {
+      if (e.data === "connected") return;
+      const d = JSON.parse(e.data);
+      setStatus(d.status);
+      localStorage.setItem(ACTIVE_STATUS_KEY, d.status);
+    };
     return () => stream.close();
   }, [order]);
 
-// ------------------------------------------------------------
-// 4️⃣ Minimized Floating Bubble
-// ------------------------------------------------------------
-if (minimized && order) {
-  return (
-    <div
-      className="fixed bottom-5 right-5 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-5 py-3 rounded-2xl shadow-2xl cursor-pointer hover:shadow-green-500/50 transform hover:scale-105 active:scale-95 transition-all duration-300 z-[9999] group"
-      onClick={() => setMinimized(false)}
-    >
-      <div className="flex items-center gap-3">
-        {/* Animated pulse indicator */}
-        <div className="relative flex items-center justify-center">
-          <div className="w-2.5 h-2.5 bg-white rounded-full animate-pulse"></div>
-          <div className="absolute w-2.5 h-2.5 bg-white rounded-full animate-ping"></div>
-        </div>
+  // ── Close handler ──────────────────────────────────────────────────────────
+  function handleClose() {
+    // Don't let the user close mid-celebration — it closes itself
+    if (view === "celebration") return;
+    if (["completed", "rejected"].includes(status)) {
+      localStorage.removeItem(ACTIVE_ORDER_KEY);
+      localStorage.removeItem(ACTIVE_STATUS_KEY);
+    }
+    onClose();
+  }
 
-        {/* Content */}
-        <div className="flex flex-col leading-tight">
-          <span className="text-xs font-medium opacity-90">Order #{order?._id?.slice(-6)}</span>
-          <span className="text-sm font-bold tracking-wide">
-            {typeof status === "string" ? status.toUpperCase() : "PENDING"}
-          </span>
+  // ── Minimized bubble ───────────────────────────────────────────────────────
+  if (minimized && order) {
+    const step = STEPS[stepIndex(status)] ?? STEPS[0];
+    return (
+      <div
+        onClick={() => setMinimized(false)}
+        className="fixed bottom-24 right-4 z-[9999] bg-orange-500 text-white px-4 py-3 rounded-2xl shadow-xl cursor-pointer flex items-center gap-3 active:scale-95 transition-transform"
+      >
+        <span className="text-xl animate-pulse">{step.icon}</span>
+        <div className="leading-tight">
+          <p className="text-[11px] opacity-80">Order #{order._id?.slice(-6)}</p>
+          <p className="text-sm font-bold">{step.label}</p>
         </div>
-
-        {/* Expand icon */}
-        <svg 
-          className="w-4 h-4 opacity-80 group-hover:opacity-100 transition-opacity" 
-          fill="none" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
-        >
+        <svg className="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
         </svg>
       </div>
-
-      {/* Shine effect */}
-      <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none"></div>
-    </div>
-  );
-}
-  // ------------------------------------------------------------
-  // 5️⃣ Close Handler (user-controlled)
-  // ------------------------------------------------------------
-function handleClose() {
-  if (["completed", "rejected"].includes(status)) {
-    // 🔥 Clear persisted order
-    localStorage.removeItem(ACTIVE_ORDER_KEY);
-    localStorage.removeItem(ACTIVE_STATUS_KEY);
-
-    // 🔥 Reset popup state so new order is allowed
-    setOrder(null);
-    setStatus("pending");
-    setView("review");
+    );
   }
 
-  onClose();
-}
-
-
-  // ------------------------------------------------------------
-  // MAIN POPUP UI
-  // ------------------------------------------------------------
+  // ── Sheet wrapper (bottom-sheet on mobile, centered on sm+) ───────────────
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-lg z-[9999] flex items-center justify-center">
-      <div className="bg-white w-[92%] max-w-lg rounded-2xl shadow-2xl p-7 relative">
-
-        {/* Close */}
-        <button
-          onClick={handleClose}
-          className="absolute top-3 right-4 text-gray-600 hover:text-black"
-        >
-          ✖
-        </button>
-
-        {/* Minimize */}
-        <button
-          onClick={() => setMinimized(true)}
-          className="absolute top-3 right-12 text-gray-600 hover:text-black"
-        >
-          ⤵
-        </button>
-
-{/* REVIEW */}
-{view === "review" && (
-  <div className="flex flex-col h-full max-h-[80vh]">
-    {/* Header - Fixed */}
-    <div className="mb-4 text-center flex-shrink-0">
-      <div className="inline-block">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-          Review Your Order
-        </h2>
-        <div className="h-1 w-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full mx-auto mt-2"></div>
-      </div>
-      <p className="text-sm text-gray-500 mt-3">
-        Please verify your items before confirming
-      </p>
-    </div>
-
-    {/* Scrollable Cart Items Card */}
     <div
-      className="flex-1 overflow-y-auto mb-4 pr-1"
-      style={{ scrollbarWidth: "thin" }}
+      className={`fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-400 ${closing ? "opacity-0" : "opacity-100"}`}
+      onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
     >
-      <div className="bg-gradient-to-br from-white to-gray-50 rounded-3xl p-5 shadow-lg border border-gray-100 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-green-100 rounded-full opacity-20 -mr-16 -mt-16"></div>
-
-        <div className="space-y-3">
-          {cartItems.map((item, idx) => (
-            <div
-              key={idx}
-              className="flex justify-between items-center py-3 px-4 bg-white rounded-2xl border border-gray-100 hover:border-green-200 hover:shadow-md transition-all duration-300 group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
-                  <span className="text-lg">🍽️</span>
-                </div>
-                <div>
-                  <span className="font-semibold text-gray-800 block">
-                    {item.name}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    Quantity: {item.quantity}
-                  </span>
-                </div>
-              </div>
-              <div className="text-right flex-shrink-0">
-                <span className="font-bold text-green-600 text-lg">
-                  ₹{item.price * item.quantity}
-                </span>
-                <div className="text-xs text-gray-400">
-                  ₹{item.price} each
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Total */}
-        <div className="mt-5 pt-4 border-t-2 border-dashed border-gray-200 bg-white rounded-xl -mx-5 px-9 py-3 sticky bottom-0">
-          <div className="flex justify-between items-center">
-            <span className="text-lg font-bold text-gray-700">
-              Total Amount
-            </span>
-            <span className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-              ₹
-              {cartItems.reduce(
-                (sum, item) =>
-                  sum + item.price * item.quantity,
-                0
-              )}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    {/* TABLE SELECTION (ALWAYS VISIBLE + EDITABLE) */}
-    <div className="mb-4">
-      <p className="text-sm font-semibold text-gray-600 mb-2">
-        Select your table number
-      </p>
-
-      {selectedTable && (
-        <div className="mb-2 text-sm text-green-700 font-semibold flex items-center justify-between">
-          <span>Selected Table: {selectedTable}</span>
-          <button
-            onClick={() => setSelectedTable(null)}
-            className="text-xs text-gray-500 underline"
-          >
-            Change
-          </button>
-        </div>
-      )}
-
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        {Array.from({ length: 20 }, (_, i) => i + 1).map((num) => (
-          <button
-            key={num}
-            onClick={() => setSelectedTable(num)}
-            className={`min-w-[48px] h-12 rounded-xl border font-bold transition-all
-              ${
-                selectedTable === num
-                  ? "bg-green-600 text-white border-green-600"
-                  : "bg-white text-gray-700 border-gray-200 hover:border-green-400"
-              }
-            `}
-          >
-            {num}
-          </button>
-        ))}
-      </div>
-    </div>
-
-    {/* Confirm Button */}
-    <div className="flex-shrink-0">
-      <button
-        onClick={placeOrder}
-        disabled={!selectedTable}
-        className={`w-full py-4 rounded-2xl text-white font-bold text-lg shadow-lg transition-all duration-300
-          ${
-            selectedTable
-              ? "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0"
-              : "bg-gray-400 cursor-not-allowed"
-          }
-        `}
+      <div
+        className={`relative bg-white w-full sm:w-[92%] sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden transition-transform duration-400 ${closing ? "translate-y-8 sm:translate-y-4" : "translate-y-0"}`}
+        onClick={(e) => e.stopPropagation()}
       >
-        <span className="relative z-10 flex items-center justify-center gap-2">
-          <span>Confirm Order</span>
-          <span className="text-xl">✓</span>
-        </span>
-      </button>
-    </div>
-  </div>
-)}
+        {/* Drag handle (mobile) */}
+        <div className="sm:hidden flex justify-center pt-3 pb-1 flex-shrink-0">
+          <div className="w-10 h-1 bg-gray-200 rounded-full" />
+        </div>
 
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
+          <h2 className="text-base font-bold text-gray-900">
+            {view === "review"    && "Review Order"}
+            {view === "placing"   && "Placing Order…"}
+            {view === "confirmed" && "Order Placed!"}
+            {view === "tracking"  && "Track Order"}
+          </h2>
+          <div className="flex items-center gap-2">
+            {view === "tracking" && (
+              <button
+                onClick={() => setMinimized(true)}
+                className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-500 transition-colors text-sm"
+                aria-label="Minimize"
+              >
+                ↓
+              </button>
+            )}
+            {view !== "celebration" && (
+              <button
+                onClick={handleClose}
+                className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-500 transition-colors"
+                aria-label="Close"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
 
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto">
 
-        {/* PLACING */}
-        {view === "placing" && (
-          <div className="text-center py-12">
-            {/* Animated loader container */}
-            <div className="inline-block relative mb-6">
-              {/* Outer spinning ring */}
-              <div className="h-24 w-24 rounded-full border-4 border-gray-200 border-t-green-500 animate-spin mx-auto"></div>
-              {/* Inner pulsing circle */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 animate-pulse flex items-center justify-center">
-                  <span className="text-3xl">🍽️</span>
+          {/* ── REVIEW ───────────────────────────────────────────────────── */}
+          {view === "review" && (
+            <div className="px-5 py-4 space-y-4">
+
+              {/* Error banner */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 flex items-start gap-2">
+                  <span className="mt-0.5 flex-shrink-0">⚠️</span>
+                  <span>{error}</span>
                 </div>
+              )}
+
+              {/* Item list */}
+              <div className="space-y-2">
+                {cartItems.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between bg-gray-50 rounded-2xl px-4 py-3">
+                    <div>
+                      <p className="font-semibold text-gray-900 text-sm">{item.name}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">×{item.quantity}</p>
+                    </div>
+                    <p className="font-bold text-orange-600 text-sm">₹{item.price * item.quantity}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Total */}
+              <div className="flex justify-between items-center border-t border-dashed border-gray-200 pt-3">
+                <span className="text-sm text-gray-500">{cartItems.length} item{cartItems.length !== 1 ? "s" : ""}</span>
+                <span className="text-lg font-black text-gray-900">₹{total}</span>
+              </div>
+
+              {/* Table selection */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Table number
+                </label>
+                {selectedTable ? (
+                  <div className="flex items-center justify-between bg-orange-50 border border-orange-200 rounded-xl px-4 py-3">
+                    <span className="text-sm font-semibold text-orange-700">Table {selectedTable}</span>
+                    <button
+                      onClick={() => { setSelectedTable(""); setTableInput(""); }}
+                      className="text-xs text-gray-500 underline"
+                    >
+                      Change
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min="1"
+                      max="99"
+                      value={tableInput}
+                      onChange={(e) => setTableInput(e.target.value)}
+                      placeholder="Enter table no."
+                      className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+                    />
+                    <button
+                      onClick={() => {
+                        const n = parseInt(tableInput, 10);
+                        if (n > 0) setSelectedTable(n);
+                      }}
+                      disabled={!tableInput || parseInt(tableInput, 10) < 1}
+                      className="px-5 py-3 bg-orange-500 disabled:bg-gray-200 text-white disabled:text-gray-400 rounded-xl text-sm font-semibold transition-colors"
+                    >
+                      Set
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
+          )}
 
-            {/* Text content */}
-            <div className="space-y-3">
-              <p className="text-xl font-bold text-gray-800">
-                Placing your order...
-              </p>
-              <p className="text-sm text-gray-500 animate-pulse">
-                Please wait while we process your request
-              </p>
+          {/* ── PLACING ──────────────────────────────────────────────────── */}
+          {view === "placing" && (
+            <div className="flex flex-col items-center justify-center py-16 px-5 gap-5">
+              <div className="relative">
+                <div className="w-20 h-20 rounded-full border-4 border-gray-100 border-t-orange-500 animate-spin" />
+                <div className="absolute inset-0 flex items-center justify-center text-3xl">🍽️</div>
+              </div>
+              <div className="text-center space-y-1">
+                <p className="font-bold text-gray-900">Placing your order…</p>
+                <p className="text-sm text-gray-400">Just a moment</p>
+              </div>
+              <div className="flex gap-1.5">
+                {[0, 150, 300].map((d) => (
+                  <div key={d} className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />
+                ))}
+              </div>
             </div>
+          )}
 
-            {/* Animated dots */}
-            <div className="flex justify-center gap-2 mt-6">
-              <div className="h-2 w-2 rounded-full bg-green-500 animate-bounce" style={{animationDelay: '0ms'}}></div>
-              <div className="h-2 w-2 rounded-full bg-green-500 animate-bounce" style={{animationDelay: '150ms'}}></div>
-              <div className="h-2 w-2 rounded-full bg-green-500 animate-bounce" style={{animationDelay: '300ms'}}></div>
-            </div>
-          </div>
-        )}
-
-        {/* CONFIRMED - NEW SUCCESS VIEW */}
-        {view === "confirmed" && (
-          <div className="text-center py-12">
-            {/* Success Animation */}
-            <div className="inline-block relative mb-6">
-              {/* Checkmark circle with animation */}
-              <div className="h-24 w-24 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center mx-auto animate-scale-in">
-                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg">
-                  <svg className="w-10 h-10 text-white animate-check" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
+          {/* ── CONFIRMED ────────────────────────────────────────────────── */}
+          {view === "confirmed" && (
+            <div className="flex flex-col items-center justify-center py-14 px-5 gap-5">
+              <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
+                <div className="w-14 h-14 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
               </div>
-              {/* Success ripple rings */}
-              <div className="absolute inset-0 rounded-full border-4 border-green-300 animate-ping opacity-75"></div>
-              <div className="absolute inset-0 rounded-full border-2 border-green-200 animate-pulse"></div>
-            </div>
-
-            {/* Success Message */}
-            <div className="space-y-3 mb-8">
-              <h2 className="text-2xl font-bold text-gray-800 animate-fade-in">
-                Order Placed Successfully! 🎉
-              </h2>
-              <p className="text-gray-600 animate-fade-in" style={{animationDelay: '0.2s'}}>
-                Your order has been received
-              </p>
-              <p className="text-sm text-gray-500 animate-fade-in" style={{animationDelay: '0.3s'}}>
-                Order ID: <span className="font-semibold text-green-600">#{order?._id?.slice(-6)}</span>
-              </p>
-            </div>
-
-            {/* Info card */}
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-5 mb-6 animate-slide-up">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
-                <p className="text-sm font-semibold text-green-800">
-                  Waiting for Restaurant Confirmation
+              <div className="text-center space-y-1">
+                <p className="text-xl font-black text-gray-900">Order Placed! 🎉</p>
+                <p className="text-sm text-gray-500">
+                  Order #{order?._id?.slice(-6)} · Table {selectedTable}
                 </p>
               </div>
-              <p className="text-xs text-green-700">
-                The restaurant will review your order shortly
+              <p className="text-xs text-gray-400 animate-pulse">Opening tracker…</p>
+            </div>
+          )}
+
+          {/* ── CELEBRATION (auto-closes) ────────────────────────────────── */}
+          {view === "celebration" && (
+            <div className="flex flex-col items-center justify-center py-10 px-6 gap-6 text-center">
+              {/* Confetti burst */}
+              <ConfettiBurst />
+
+              {/* Big checkmark */}
+              <div className="relative">
+                <div className="w-24 h-24 rounded-full bg-green-100 flex items-center justify-center animate-[scale-in_0.4s_ease-out]">
+                  <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center shadow-xl shadow-green-200">
+                    <svg className="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                </div>
+                {/* Ping rings */}
+                <div className="absolute inset-0 rounded-full border-4 border-green-300 animate-ping opacity-40" />
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-2xl font-black text-gray-900">Enjoy your meal! 🍽️</p>
+                <p className="text-sm text-gray-500">
+                  Order #{order?._id?.slice(-6)} is complete.
+                </p>
+              </div>
+
+              {/* Thank-you message */}
+              <div className="bg-green-50 border border-green-200 rounded-2xl px-5 py-4 w-full">
+                <p className="text-sm text-green-800 font-medium">Thank you for dining with us!</p>
+                <p className="text-xs text-green-600 mt-1">We hope to see you again soon.</p>
+              </div>
+
+              {/* Auto-close countdown */}
+              <p className="text-xs text-gray-400 animate-pulse">
+                Closing in {countdown}s…
               </p>
             </div>
+          )}
 
-            {/* Auto redirect message */}
-            <div className="flex items-center justify-center gap-2 text-xs text-gray-400 animate-fade-in" style={{animationDelay: '0.5s'}}>
-              <div className="h-1 w-1 rounded-full bg-gray-400 animate-pulse"></div>
-              <span>Redirecting to order tracking...</span>
+          {/* ── TRACKING ─────────────────────────────────────────────────── */}
+          {view === "tracking" && order && (
+            <div className="px-5 py-4 space-y-5">
+
+              {/* Order meta */}
+              <div className="text-center">
+                <p className="text-xs text-gray-400">
+                  Order <span className="font-semibold text-gray-700">#{order._id?.slice(-6)}</span>
+                  {selectedTable ? ` · Table ${selectedTable}` : ""}
+                </p>
+              </div>
+
+              {/* Step tracker */}
+              <StepTracker status={status} />
+
+              {/* Current status card */}
+              <StatusCard status={status} />
+
+              {/* Rejected special case */}
+              {status === "rejected" && (
+                <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">
+                  Unfortunately, the restaurant couldn&apos;t accept your order. Please approach the counter or try again.
+                </div>
+              )}
             </div>
+          )}
 
-            {/* Custom animations */}
-            <style jsx>{`
-              @keyframes scale-in {
-                0% {
-                  transform: scale(0);
-                  opacity: 0;
-                }
-                50% {
-                  transform: scale(1.1);
-                }
-                100% {
-                  transform: scale(1);
-                  opacity: 1;
-                }
-              }
-              @keyframes check {
-                0% {
-                  stroke-dasharray: 0, 100;
-                }
-                100% {
-                  stroke-dasharray: 100, 0;
-                }
-              }
-              @keyframes fade-in {
-                0% {
-                  opacity: 0;
-                  transform: translateY(10px);
-                }
-                100% {
-                  opacity: 1;
-                  transform: translateY(0);
-                }
-              }
-              @keyframes slide-up {
-                0% {
-                  opacity: 0;
-                  transform: translateY(20px);
-                }
-                100% {
-                  opacity: 1;
-                  transform: translateY(0);
-                }
-              }
-              .animate-scale-in {
-                animation: scale-in 0.5s ease-out;
-              }
-              .animate-check {
-                animation: check 0.5s ease-out 0.3s both;
-              }
-              .animate-fade-in {
-                animation: fade-in 0.6s ease-out both;
-              }
-              .animate-slide-up {
-                animation: slide-up 0.6s ease-out 0.4s both;
-              }
-            `}</style>
+        </div>
+
+        {/* Footer action */}
+        {view === "review" && (
+          <div className="px-5 pb-6 pt-3 border-t border-gray-100 flex-shrink-0">
+            <button
+              onClick={placeOrder}
+              disabled={!selectedTable}
+              className={`w-full py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+                selectedTable
+                  ? "bg-orange-500 hover:bg-orange-600 active:scale-[0.98] text-white shadow-lg shadow-orange-200"
+                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
+              }`}
+            >
+              Confirm Order
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
           </div>
         )}
 
-        {/* TRACKING */}
-        {view === "tracking" && order && (
-          <>
-            {/* Header */}
-            <div className="mb-6 text-center">
-              <div className="inline-block">
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                  Order Status
-                </h2>
-                <div className="h-1 w-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mx-auto mt-2"></div>
-              </div>
-              <p className="text-sm text-gray-500 mt-3 font-medium">
-                Order ID: <span className="text-gray-700">#{order._id.slice(-6)}</span>
-              </p>
-            </div>
-
-            {/* Status Card */}
-            <div className="bg-gradient-to-br from-white to-gray-50 rounded-3xl p-6 shadow-lg border border-gray-100 mb-6 relative overflow-hidden">
-              {/* Decorative circles */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100 rounded-full opacity-20 -mr-16 -mt-16"></div>
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-purple-100 rounded-full opacity-20 -ml-12 -mb-12"></div>
-              
-              {/* Status Icon & Text Row */}
-              <div className="relative flex items-center gap-4 mb-5">
-                {/* Animated Status Dot */}
-                <div className="relative">
-                  <span
-                    className={`block h-14 w-14 rounded-full flex items-center justify-center
-                      ${status === "pending" && "bg-yellow-100"}
-                      ${status === "accepted" && "bg-blue-100"}
-                      ${status === "preparing" && "bg-orange-100"}
-                      ${status === "completed" && "bg-green-100"}
-                      ${status === "rejected" && "bg-red-100"}
-                      ${!status && "bg-gray-100"}
-                    `}
-                  >
-                    <span
-                      className={`h-7 w-7 rounded-full
-                        ${status === "pending" && "bg-yellow-400 animate-pulse"}
-                        ${status === "accepted" && "bg-blue-500"}
-                        ${status === "preparing" && "bg-orange-500 animate-pulse"}
-                        ${status === "completed" && "bg-green-500"}
-                        ${status === "rejected" && "bg-red-500"}
-                        ${!status && "bg-gray-400"}
-                      `}
-                    />
-                  </span>
-                  {/* Ripple effect for active statuses */}
-                  {(status === "pending" || status === "preparing") && (
-                    <span className={`absolute inset-0 rounded-full animate-ping opacity-30
-                      ${status === "pending" && "bg-yellow-400"}
-                      ${status === "preparing" && "bg-orange-500"}
-                    `}></span>
-                  )}
-                </div>
-                
-                <div className="flex-1">
-                  <span className={`block font-bold text-xl capitalize mb-1
-                    ${status === "pending" && "text-yellow-600"}
-                    ${status === "accepted" && "text-blue-600"}
-                    ${status === "preparing" && "text-orange-600"}
-                    ${status === "completed" && "text-green-600"}
-                    ${status === "rejected" && "text-red-600"}
-                    ${!status && "text-gray-600"}
-                  `}>
-                    {status || "pending"}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <div className={`h-1.5 w-1.5 rounded-full
-                      ${status === "pending" && "bg-yellow-400"}
-                      ${status === "accepted" && "bg-blue-500"}
-                      ${status === "preparing" && "bg-orange-500"}
-                      ${status === "completed" && "bg-green-500"}
-                      ${status === "rejected" && "bg-red-500"}
-                      ${!status && "bg-gray-400"}
-                    `}></div>
-                    <span className="text-xs text-gray-500 font-medium">Live tracking</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Friendly Message */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 mb-5 border border-gray-100">
-                <p className="text-gray-700 text-sm leading-relaxed">
-                  {status === "pending" && "⏰ Waiting for the restaurant to accept your order..."}
-                  {status === "accepted" && "✅ Your order has been accepted and will be prepared soon!"}
-                  {status === "preparing" && "👨‍🍳 Your food is being prepared with care..."}
-                  {status === "completed" && "🎉 Your order is ready. Enjoy your delicious meal!"}
-                  {status === "rejected" && "😔 Unfortunately, the restaurant couldn't accept your order."}
-                  {!status && "⏰ Waiting for the restaurant to accept your order..."}
-                </p>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="relative">
-                <div className="flex justify-between text-xs text-gray-500 mb-2 font-medium">
-                  <span>Started</span>
-                  <span>
-                    {status === "pending" && "25%"}
-                    {status === "accepted" && "50%"}
-                    {status === "preparing" && "75%"}
-                    {(status === "completed" || status === "rejected") && "100%"}
-                    {!status && "25%"}
-                  </span> 
-                </div>
-                <div className="h-3 w-full bg-gray-200 rounded-full overflow-hidden shadow-inner">
-                  <div
-                    className={`h-full rounded-full transition-all duration-1000 ease-out relative overflow-hidden
-                      ${status === "pending" && "w-1/4 bg-gradient-to-r from-yellow-300 to-yellow-500"}
-                      ${status === "accepted" && "w-2/4 bg-gradient-to-r from-blue-400 to-blue-600"}
-                      ${status === "preparing" && "w-3/4 bg-gradient-to-r from-orange-400 to-orange-600"}
-                      ${status === "completed" && "w-full bg-gradient-to-r from-green-400 to-green-600"}
-                      ${status === "rejected" && "w-full bg-gradient-to-r from-red-400 to-red-600"}
-                      ${!status && "w-1/4 bg-gradient-to-r from-yellow-300 to-yellow-500"}
-                    `}
-                  >
-                    {/* Shimmer effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-shimmer"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Button */}
+        {view === "tracking" && (
+          <div className="px-5 pb-6 pt-3 border-t border-gray-100 flex-shrink-0">
             <button
               onClick={() => setMinimized(true)}
-              className="w-full bg-gradient-to-r from-gray-800 to-gray-700 hover:from-gray-700 hover:to-gray-600 text-white transition-all duration-300 py-4 rounded-2xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0"
+              className="w-full py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-sm transition-colors"
             >
-              <span className="flex items-center justify-center gap-2">
-                <span>Browse Menu</span>
-                <span className="text-xl">🍽️</span>
-              </span>
+              Browse Menu
             </button>
-
-            {/* Add shimmer animation to styles */}
-            <style jsx>{`
-              @keyframes shimmer {
-                0% {
-                  transform: translateX(-100%);
-                }
-                100% {
-                  transform: translateX(100%);
-                }
-              }
-              .animate-shimmer {
-                animation: shimmer 2s infinite;
-              }
-            `}</style>
-          </>
+          </div>
         )}
-
       </div>
     </div>
   );
 }
 
-// ------------------------------------------------------------
-// Helper
-// ------------------------------------------------------------
+// ── Step tracker component ────────────────────────────────────────────────────
+function StepTracker({ status }) {
+  const current = stepIndex(status);
+  const isRejected = status === "rejected";
+
+  if (isRejected) {
+    return (
+      <div className="flex items-center justify-center gap-2 bg-red-50 border border-red-200 rounded-2xl py-4">
+        <span className="text-2xl">❌</span>
+        <span className="font-semibold text-red-700 text-sm">Order Rejected</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      {/* Connecting line */}
+      <div className="absolute top-5 left-5 right-5 h-0.5 bg-gray-200 -z-0" />
+      <div
+        className="absolute top-5 left-5 h-0.5 bg-orange-400 -z-0 transition-all duration-700"
+        style={{ width: `${(current / (STEPS.length - 1)) * (100 - 10)}%` }}
+      />
+
+      <div className="relative flex justify-between">
+        {STEPS.map((step, idx) => {
+          const done   = idx < current;
+          const active = idx === current;
+
+          return (
+            <div key={step.key} className="flex flex-col items-center gap-1.5 w-12">
+              {/* Circle */}
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center text-lg transition-all duration-500 ${
+                  done
+                    ? "bg-orange-500 shadow-md shadow-orange-200"
+                    : active
+                    ? "bg-orange-100 ring-2 ring-orange-400 ring-offset-2 animate-pulse"
+                    : "bg-gray-100"
+                }`}
+              >
+                {done ? (
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <span className={active ? "" : "opacity-40"}>{step.icon}</span>
+                )}
+              </div>
+
+              {/* Label */}
+              <span
+                className={`text-[10px] text-center leading-tight font-medium ${
+                  active ? "text-orange-600 font-bold" : done ? "text-gray-600" : "text-gray-400"
+                }`}
+              >
+                {step.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Status card ───────────────────────────────────────────────────────────────
+function StatusCard({ status }) {
+  const step = STEPS[stepIndex(status)] ?? STEPS[0];
+  const isActive = ["pending", "preparing"].includes(status);
+
+  return (
+    <div className="bg-gray-50 rounded-2xl px-4 py-4 flex items-center gap-4">
+      <div
+        className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl flex-shrink-0 ${
+          status === "completed" ? "bg-green-100" :
+          status === "rejected"  ? "bg-red-100"   :
+          "bg-orange-100"
+        }`}
+      >
+        <span className={isActive ? "animate-bounce" : ""}>{step.icon}</span>
+      </div>
+      <div>
+        <p className={`font-bold text-sm ${
+          status === "completed" ? "text-green-700" :
+          status === "rejected"  ? "text-red-700"   :
+          "text-orange-700"
+        }`}>
+          {step.label}
+        </p>
+        <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{step.desc}</p>
+      </div>
+      {isActive && (
+        <div className="ml-auto flex gap-1">
+          {[0, 200, 400].map((d) => (
+            <div key={d} className="w-1.5 h-1.5 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Confetti burst ────────────────────────────────────────────────────────────
+const CONFETTI_COLORS = ["#f97316", "#22c55e", "#3b82f6", "#a855f7", "#eab308", "#ec4899"];
+const CONFETTI_COUNT  = 24;
+
+function ConfettiBurst() {
+  const pieces = Array.from({ length: CONFETTI_COUNT }, (_, i) => {
+    const angle  = (i / CONFETTI_COUNT) * 360;
+    const dist   = 60 + Math.random() * 50;
+    const dx     = Math.cos((angle * Math.PI) / 180) * dist;
+    const dy     = Math.sin((angle * Math.PI) / 180) * dist;
+    const color  = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+    const size   = 6 + Math.random() * 6;
+    const delay  = Math.random() * 0.3;
+    const rotate = Math.random() * 360;
+    return { dx, dy, color, size, delay, rotate };
+  });
+
+  return (
+    <div className="relative w-0 h-0 pointer-events-none" aria-hidden="true">
+      {pieces.map((p, i) => (
+        <div
+          key={i}
+          className="absolute rounded-sm"
+          style={{
+            width:     p.size,
+            height:    p.size,
+            background: p.color,
+            top:        "50%",
+            left:       "50%",
+            transform:  `translate(-50%,-50%) rotate(${p.rotate}deg)`,
+            animation:  `confetti-fly 0.9s ease-out ${p.delay}s both`,
+            // CSS custom properties for the keyframe target
+            "--dx": `${p.dx}px`,
+            "--dy": `${p.dy}px`,
+          }}
+        />
+      ))}
+      <style>{`
+        @keyframes confetti-fly {
+          0%   { opacity: 1; transform: translate(-50%,-50%) scale(1) rotate(0deg); }
+          80%  { opacity: 1; }
+          100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.4) rotate(180deg); }
+        }
+        @keyframes scale-in {
+          0%   { transform: scale(0);   opacity: 0; }
+          60%  { transform: scale(1.1); opacity: 1; }
+          100% { transform: scale(1);   opacity: 1; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// ── Helper ────────────────────────────────────────────────────────────────────
 function getOrCreateDeviceId() {
   let id = localStorage.getItem("deviceSessionId");
   if (!id) {
