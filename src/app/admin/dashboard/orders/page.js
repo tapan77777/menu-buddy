@@ -1,7 +1,359 @@
 "use client";
 
-import { Bell, BellOff, CheckCircle, ChefHat, Clock, History, PackageCheck, RefreshCw, XCircle } from "lucide-react";
+import {
+  Bell, BellOff, CheckCircle, ChefHat, Clock, History,
+  Minus, PackageCheck, Plus, RefreshCw, ShoppingCart,
+  Smartphone, X, XCircle
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+
+// ─── Manual Order Modal ────────────────────────────────────────────────────────
+
+function ManualOrderModal({ restaurantId, onClose, onOrderCreated }) {
+  const [step, setStep] = useState(1); // 1=table, 2=items, 3=review
+  const [tableId, setTableId] = useState("");
+  const [menuGrouped, setMenuGrouped] = useState({});
+  const [menuLoading, setMenuLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState("");
+  const [cart, setCart] = useState({}); // { itemId: { item, qty } }
+  const [specialRequests, setSpecialRequests] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  // Fetch menu on mount
+  useEffect(() => {
+    fetch("/api/admin/menu")
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          setMenuGrouped(data.grouped);
+          const cats = Object.keys(data.grouped);
+          if (cats.length > 0) setActiveCategory(cats[0]);
+        }
+      })
+      .finally(() => setMenuLoading(false));
+  }, []);
+
+  const categories = Object.keys(menuGrouped);
+  const cartItems = Object.values(cart);
+  const cartTotal = cartItems.reduce((sum, { item, qty }) => sum + item.price * qty, 0);
+  const cartCount = cartItems.reduce((sum, { qty }) => sum + qty, 0);
+
+  function addItem(item) {
+    const key = String(item._id);
+    setCart(prev => ({
+      ...prev,
+      [key]: { item, qty: (prev[key]?.qty ?? 0) + 1 },
+    }));
+  }
+
+  function removeItem(item) {
+    const key = String(item._id);
+    setCart(prev => {
+      const current = prev[key]?.qty ?? 0;
+      if (current <= 1) {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      }
+      return { ...prev, [key]: { item, qty: current - 1 } };
+    });
+  }
+
+  function getQty(item) {
+    return cart[String(item._id)]?.qty ?? 0;
+  }
+
+  async function submitOrder() {
+    setSubmitting(true);
+    setError("");
+    try {
+      const items = cartItems.map(({ item, qty }) => ({
+        itemId: item._id,
+        name: item.name,
+        price: item.price,
+        qty,
+      }));
+
+      const res = await fetch("/api/admin/orders/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tableId, items, specialRequests }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        onOrderCreated();
+        onClose();
+      } else {
+        setError(data.error || "Failed to create order");
+      }
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] flex flex-col overflow-hidden">
+
+        {/* Modal Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-orange-50 to-amber-50">
+          <div>
+            <h2 className="text-lg font-bold text-gray-800">New Manual Order</h2>
+            <div className="flex items-center gap-2 mt-1">
+              {[1, 2, 3].map(s => (
+                <div key={s} className="flex items-center gap-1">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                    step === s
+                      ? "bg-orange-500 text-white"
+                      : step > s
+                      ? "bg-green-500 text-white"
+                      : "bg-gray-200 text-gray-500"
+                  }`}>{s}</div>
+                  {s < 3 && <div className={`w-6 h-0.5 ${step > s ? "bg-green-500" : "bg-gray-200"}`} />}
+                </div>
+              ))}
+              <span className="text-xs text-gray-500 ml-1">
+                {step === 1 ? "Select Table" : step === 2 ? "Pick Items" : "Review"}
+              </span>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Step 1: Select Table */}
+        {step === 1 && (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 gap-6">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <ChefHat className="w-8 h-8 text-orange-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800">Which table?</h3>
+              <p className="text-gray-500 text-sm mt-1">Enter the table number or leave blank for counter orders</p>
+            </div>
+
+            <input
+              type="text"
+              value={tableId}
+              onChange={e => setTableId(e.target.value)}
+              placeholder="e.g. 4, A3, Bar-1 (optional)"
+              className="w-full max-w-sm text-center text-2xl font-bold border-2 border-gray-200 focus:border-orange-400 rounded-2xl px-4 py-4 outline-none transition-colors"
+              autoFocus
+              onKeyDown={e => e.key === "Enter" && setStep(2)}
+            />
+
+            <button
+              onClick={() => setStep(2)}
+              className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-10 py-3 rounded-xl transition-colors text-lg"
+            >
+              Continue →
+            </button>
+          </div>
+        )}
+
+        {/* Step 2: Pick Items */}
+        {step === 2 && (
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {menuLoading ? (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center text-gray-500">
+                  <ChefHat className="w-10 h-10 mx-auto mb-2 animate-bounce text-orange-400" />
+                  <p>Loading menu...</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Category Tabs */}
+                <div className="flex gap-2 overflow-x-auto px-4 py-3 border-b border-gray-100 scrollbar-none">
+                  {categories.map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setActiveCategory(cat)}
+                      className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${
+                        activeCategory === cat
+                          ? "bg-orange-500 text-white shadow-md"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Item Grid */}
+                <div className="flex-1 overflow-y-auto px-4 py-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {(menuGrouped[activeCategory] || []).map(item => {
+                    const qty = getQty(item);
+                    return (
+                      <div key={item._id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-orange-200 transition-colors">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-800 text-sm truncate">{item.name}</p>
+                          <p className="text-orange-600 font-bold text-sm">₹{item.price}</p>
+                          {item.bestseller && (
+                            <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-medium">⭐ Best</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          {qty > 0 ? (
+                            <>
+                              <button onClick={() => removeItem(item)} className="w-7 h-7 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg flex items-center justify-center transition-colors">
+                                <Minus className="w-3.5 h-3.5" />
+                              </button>
+                              <span className="w-6 text-center font-bold text-gray-800 text-sm">{qty}</span>
+                              <button onClick={() => addItem(item)} className="w-7 h-7 bg-orange-500 hover:bg-orange-600 text-white rounded-lg flex items-center justify-center transition-colors">
+                                <Plus className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          ) : (
+                            <button onClick={() => addItem(item)} className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold transition-colors">
+                              Add
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Sticky Cart Summary */}
+                <div className="border-t border-gray-200 bg-white px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <ShoppingCart className="w-5 h-5 text-gray-600" />
+                        {cartCount > 0 && (
+                          <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-orange-500 text-white text-xs rounded-full flex items-center justify-center font-bold leading-none">{cartCount}</span>
+                        )}
+                      </div>
+                      <span className="text-sm text-gray-600">
+                        {cartCount === 0 ? "No items yet" : `${cartCount} item${cartCount > 1 ? "s" : ""}`}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold text-green-600">₹{cartTotal}</span>
+                      <button
+                        onClick={() => setStep(3)}
+                        disabled={cartCount === 0}
+                        className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold px-5 py-2 rounded-xl text-sm transition-colors"
+                      >
+                        Review →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Step 3: Review & Confirm */}
+        {step === 3 && (
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+              {/* Order Summary */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <ChefHat className="w-4 h-4 text-orange-500" />
+                  <h4 className="font-bold text-gray-800 text-sm">Order Summary</h4>
+                  {tableId && (
+                    <span className="ml-auto text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold">
+                      Table {tableId}
+                    </span>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  {cartItems.map(({ item, qty }) => (
+                    <div key={item._id} className="flex justify-between items-center text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-400 font-mono text-xs w-5 text-right">{qty}×</span>
+                        <span className="text-gray-700 font-medium">{item.name}</span>
+                      </div>
+                      <span className="font-semibold text-gray-700">₹{item.price * qty}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 pt-3 border-t border-gray-200 flex justify-between">
+                  <span className="font-bold text-gray-700">Total</span>
+                  <span className="font-bold text-xl text-green-600">₹{cartTotal}</span>
+                </div>
+              </div>
+
+              {/* Special Requests */}
+              <div>
+                <label className="text-sm font-semibold text-gray-700 block mb-1.5">Special Requests <span className="text-gray-400 font-normal">(optional)</span></label>
+                <textarea
+                  value={specialRequests}
+                  onChange={e => setSpecialRequests(e.target.value)}
+                  placeholder="e.g. extra spicy, no onions..."
+                  rows={2}
+                  className="w-full border-2 border-gray-200 focus:border-orange-400 rounded-xl px-3 py-2 text-sm outline-none resize-none transition-colors"
+                />
+              </div>
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+                  {error}
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="border-t border-gray-100 px-5 py-4 flex gap-3">
+              <button
+                onClick={() => setStep(2)}
+                className="flex-1 border-2 border-gray-200 hover:border-gray-300 text-gray-700 font-bold py-3 rounded-xl transition-colors"
+              >
+                ← Back
+              </button>
+              <button
+                onClick={submitOrder}
+                disabled={submitting}
+                className="flex-2 flex-grow-[2] bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:from-gray-300 disabled:to-gray-300 text-white font-bold py-3 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2"
+              >
+                {submitting ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Placing...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-4 h-4" />
+                    Place Order · ₹{cartTotal}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Source Badge ──────────────────────────────────────────────────────────────
+
+function SourceBadge({ source }) {
+  if (source === "staff") {
+    return (
+      <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-700 text-xs font-bold px-2 py-0.5 rounded-full">
+        <ChefHat className="w-3 h-3" />
+        Staff
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 bg-sky-100 text-sky-700 text-xs font-bold px-2 py-0.5 rounded-full">
+      <Smartphone className="w-3 h-3" />
+      QR
+    </span>
+  );
+}
+
+// ─── Main Orders Page ──────────────────────────────────────────────────────────
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState([]);
@@ -10,6 +362,7 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [showHistory, setShowHistory] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [showManualModal, setShowManualModal] = useState(false);
   const audioRef = useRef(null);
   const prevOrderCountRef = useRef(0);
   const sseRef = useRef(null);
@@ -24,7 +377,6 @@ export default function OrdersPage() {
     async function load() {
       try {
         const me = await fetch("/api/admin/me").then(r => r.json());
-
         if (me?.admin?.restaurantId) {
           setRestaurantId(me.admin.restaurantId);
         }
@@ -37,7 +389,6 @@ export default function OrdersPage() {
     load();
   }, []);
 
-  // Fetch orders with better error handling
   function fetchOrders() {
     if (!restaurantId) return;
 
@@ -45,7 +396,6 @@ export default function OrdersPage() {
       .then(r => r.json())
       .then(data => {
         if (data.success) {
-          // Check for new orders and play sound
           if (soundEnabled && data.orders.length > prevOrderCountRef.current) {
             const newOrders = data.orders.filter(o => o.status === 'pending');
             if (newOrders.length > 0 && prevOrderCountRef.current > 0) {
@@ -67,48 +417,32 @@ export default function OrdersPage() {
     if (restaurantId) fetchOrders();
   }, [restaurantId]);
 
-  // Enhanced SSE with reconnection logic
+  // SSE with reconnection
   useEffect(() => {
     if (!restaurantId) return;
 
     function connectSSE() {
-      // Close existing connection
-      if (sseRef.current) {
-        sseRef.current.close();
-      }
+      if (sseRef.current) sseRef.current.close();
 
       const sse = new EventSource(`/api/admin/events?restaurantId=${restaurantId}`);
       sseRef.current = sse;
 
-      sse.onopen = () => {
-        setIsConnected(true);
-        console.log('SSE Connected');
-      };
-
+      sse.onopen = () => { setIsConnected(true); };
       sse.onmessage = (event) => {
         if (event.data === "connected") return;
         fetchOrders();
       };
-
       sse.onerror = () => {
         setIsConnected(false);
-        console.log('SSE Disconnected, reconnecting...');
         sse.close();
-        // Reconnect after 3 seconds
         setTimeout(connectSSE, 3000);
       };
     }
 
     connectSSE();
-
-    return () => {
-      if (sseRef.current) {
-        sseRef.current.close();
-      }
-    };
+    return () => { if (sseRef.current) sseRef.current.close(); };
   }, [restaurantId]);
 
-  // Update order status
   async function updateStatus(orderId, status) {
     await fetch("/api/order/update", {
       method: "POST",
@@ -118,7 +452,6 @@ export default function OrdersPage() {
     fetchOrders();
   }
 
-  // Status configuration
   const statusConfig = {
     pending: { icon: Clock, color: "bg-yellow-500", textColor: "text-yellow-700", bgLight: "bg-yellow-50", border: "border-yellow-200", label: "New Order" },
     accepted: { icon: CheckCircle, color: "bg-blue-500", textColor: "text-blue-700", bgLight: "bg-blue-50", border: "border-blue-200", label: "Accepted" },
@@ -128,13 +461,11 @@ export default function OrdersPage() {
     rejected: { icon: XCircle, color: "bg-red-500", textColor: "text-red-700", bgLight: "bg-red-50", border: "border-red-200", label: "Rejected" }
   };
 
-  // Filter orders
   const activeOrders = orders.filter(o => ['pending', 'accepted', 'preparing', 'ready'].includes(o.status));
   const historyOrders = orders.filter(o => ['completed', 'rejected'].includes(o.status));
   const pendingOrders = activeOrders.filter(o => o.status === 'pending');
   const processingOrders = activeOrders.filter(o => ['accepted', 'preparing', 'ready'].includes(o.status));
 
-  // Order Card Component
   const OrderCard = ({ order }) => {
     const config = statusConfig[order.status] || statusConfig.pending;
     const StatusIcon = config.icon;
@@ -149,11 +480,14 @@ export default function OrdersPage() {
                 <StatusIcon className="w-4 h-4 text-white" />
               </div>
               <div>
-                <p className="font-bold text-gray-800 text-sm">#{order.orderId}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="font-bold text-gray-800 text-sm">#{order.orderId}</p>
+                  <SourceBadge source={order.orderSource} />
+                </div>
                 <p className="text-xs text-gray-500">
-                  {new Date(order.createdAt).toLocaleTimeString('en-US', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
+                  {new Date(order.createdAt).toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit'
                   })}
                   {order.tableId && <span className="ml-2">• Table {order.tableId}</span>}
                 </p>
@@ -177,7 +511,13 @@ export default function OrdersPage() {
               </div>
             ))}
           </div>
-          
+
+          {order.meta?.specialRequests && (
+            <p className="mt-2 text-xs text-amber-700 bg-amber-50 rounded-lg px-2 py-1.5 italic">
+              📝 {order.meta.specialRequests}
+            </p>
+          )}
+
           <div className="mt-2 pt-2 border-t border-gray-200 flex justify-between items-center">
             <span className="font-bold text-gray-700 text-sm">Total</span>
             <span className="font-bold text-lg text-green-600">₹{totalAmount}</span>
@@ -240,7 +580,6 @@ export default function OrdersPage() {
     );
   };
 
-  // Loading State
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -261,6 +600,15 @@ export default function OrdersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Manual Order Modal */}
+      {showManualModal && restaurantId && (
+        <ManualOrderModal
+          restaurantId={restaurantId}
+          onClose={() => setShowManualModal(false)}
+          onOrderCreated={fetchOrders}
+        />
+      )}
+
       {/* Sticky Header */}
       <div className="bg-white shadow-md sticky top-0 z-10 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
@@ -290,13 +638,22 @@ export default function OrdersPage() {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-2">
+              {/* New Order Button */}
+              <button
+                onClick={() => setShowManualModal(true)}
+                className="flex items-center gap-1.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-3 py-2 sm:px-4 rounded-xl text-sm font-bold transition-all shadow-md active:scale-95"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">New Order</span>
+              </button>
+
               <button
                 onClick={() => setShowHistory(!showHistory)}
                 className={`p-2 sm:p-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 ${
-                  showHistory 
-                    ? 'bg-gradient-to-r from-gray-700 to-gray-900 text-white shadow-lg' 
+                  showHistory
+                    ? 'bg-gradient-to-r from-gray-700 to-gray-900 text-white shadow-lg'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
@@ -307,8 +664,8 @@ export default function OrdersPage() {
               <button
                 onClick={() => setSoundEnabled(!soundEnabled)}
                 className={`p-2 sm:p-2.5 rounded-xl transition-all duration-200 shadow-md ${
-                  soundEnabled 
-                    ? 'bg-gradient-to-r from-green-400 to-green-600 text-white' 
+                  soundEnabled
+                    ? 'bg-gradient-to-r from-green-400 to-green-600 text-white'
                     : 'bg-gray-100 text-gray-400'
                 }`}
               >
@@ -325,7 +682,6 @@ export default function OrdersPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {showHistory ? (
-          /* History View */
           <div>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -354,7 +710,6 @@ export default function OrdersPage() {
             )}
           </div>
         ) : (
-          /* Active Orders View */
           <>
             {activeOrders.length === 0 && (
               <div className="text-center py-24 bg-white rounded-3xl shadow-lg border-2 border-dashed border-gray-200">
@@ -363,8 +718,7 @@ export default function OrdersPage() {
                 </div>
                 <h3 className="text-2xl font-bold text-gray-800 mb-3">All caught up! 🎉</h3>
                 <p className="text-gray-500 mb-6">Waiting for new orders...</p>
-                
-                {/* Quick Stats */}
+
                 <div className="grid grid-cols-3 gap-4 max-w-md mx-auto mt-8">
                   <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-2xl">
                     <div className="text-3xl font-bold text-green-600">{orders.length}</div>
@@ -423,44 +777,22 @@ export default function OrdersPage() {
 
       <style jsx>{`
         @keyframes slide-in {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(10px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
-        .animate-slide-in {
-          animation: slide-in 0.3s ease-out;
-        }
+        .animate-slide-in { animation: slide-in 0.3s ease-out; }
 
         @keyframes bounce-subtle {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-10px);
-          }
+          0%, 100% { transform: translateY(0); }
+          50%       { transform: translateY(-10px); }
         }
-        .animate-bounce-subtle {
-          animation: bounce-subtle 2s ease-in-out infinite;
-        }
+        .animate-bounce-subtle { animation: bounce-subtle 2s ease-in-out infinite; }
 
-        .scrollbar-thin::-webkit-scrollbar {
-          width: 4px;
-        }
-        .scrollbar-thin::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .scrollbar-thin::-webkit-scrollbar-thumb {
-          background: #d1d5db;
-          border-radius: 4px;
-        }
-        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-          background: #9ca3af;
-        }
+        .scrollbar-none::-webkit-scrollbar { display: none; }
+        .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
       `}</style>
     </div>
   );

@@ -29,6 +29,11 @@ const OrderSchema = new Schema({
     default: "pending",
     index: true
   },
+  orderSource: {
+    type: String,
+    enum: ["customer", "staff"],
+    default: "customer",
+  },
   idempotencyKey: { type: String, required: false, index: true },
   isFlagged: { type: Boolean, default: false },
   history: [{
