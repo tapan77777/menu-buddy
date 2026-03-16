@@ -3,7 +3,8 @@
     "allow": [
       "Bash(node -e \"const {execSync} = require\\('child_process'\\); try { execSync\\('npx next build --dry-run 2>&1', {stdio:'pipe'}\\); } catch\\(e\\) { console.log\\(e.stdout?.toString\\(\\)?.slice\\(0,2000\\)\\); }\" 2>&1 | head -30)",
       "Bash(node --input-type=module --eval \"\nimport fs from 'fs';\nconst files = [\n  'src/app/admin/dashboard/layout.js',\n  'src/app/admin/dashboard/page.js'\n];\nfor \\(const f of files\\) {\n  const content = fs.readFileSync\\(f, 'utf8'\\);\n  // Check for obvious syntax errors\n  const hasDefault = content.includes\\('export default'\\);\n  const hasUseClient = content.includes\\('use client'\\);\n  console.log\\(f, { hasDefault, hasUseClient, lines: content.split\\('\\\\n'\\).length }\\);\n}\n\" 2>&1)",
-      "Bash(node scripts/set-coordinates.mjs)"
+      "Bash(node scripts/set-coordinates.mjs)",
+      "Bash(npx next:*)"
     ]
   }
 }

@@ -98,7 +98,7 @@ export default function NearbyRestaurants() {
             </h2>
             <p className="text-gray-400 text-sm mt-1">Restaurants within 5 km of your location</p>
           </div>
-          <span className="text-xs font-semibold text-orange-500 hidden sm:block">Based on your location</span>
+          <span className="text-xs font-semibold text-red-600 hidden sm:block">Based on your location</span>
         </div>
 
         {isLoading ? (
@@ -144,7 +144,7 @@ function RestaurantCard({ restaurant, index }) {
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-600 to-orange-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
               <span className="text-white text-xl font-extrabold">{initials}</span>
             </div>
           </div>
@@ -170,7 +170,7 @@ function RestaurantCard({ restaurant, index }) {
 
       {/* Info */}
       <div className="px-3 py-3 flex flex-col gap-1 flex-1">
-        <p className="font-bold text-gray-900 text-sm leading-snug line-clamp-1 group-hover:text-orange-600 transition-colors">
+        <p className="font-bold text-gray-900 text-sm leading-snug line-clamp-1 group-hover:text-red-600 transition-colors">
           {name.trim()}
         </p>
         {subtitle && (
@@ -185,7 +185,7 @@ function RestaurantCard({ restaurant, index }) {
           <span className="text-[11px] text-gray-400">
             {distLabel ? `📍 ${distLabel}` : `🕐 ${delivery}`}
           </span>
-          <span className="text-[11px] font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded-lg">
+          <span className="text-[11px] font-bold text-red-600 bg-orange-50 px-2 py-0.5 rounded-lg">
             Menu →
           </span>
         </div>

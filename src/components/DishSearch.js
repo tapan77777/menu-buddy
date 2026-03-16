@@ -64,8 +64,8 @@ export default function DishSearch({ setQueryRef } = {}) {
   return (
     <section className="relative min-h-[54vh] sm:min-h-[60vh] flex items-center overflow-hidden">
 
-      {/* ── Background: rich dark-to-orange gradient ── */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#1c0800] via-[#7c2d0a] to-[#ea580c]" />
+      {/* ── Background: deep red → warm orange (aligned with MenuBuddy brand) ── */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#3b0a0a] via-[#9b1c1c] to-[#c2410c]" />
 
       {/* Grain texture overlay */}
       <div
@@ -77,9 +77,9 @@ export default function DishSearch({ setQueryRef } = {}) {
       />
 
       {/* Ambient light blobs */}
-      <div className="absolute -top-20 -right-20 w-[420px] h-[420px] bg-orange-400/20 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute -bottom-20 -left-20 w-[380px] h-[380px] bg-amber-700/25 rounded-full blur-[90px] pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[180px] bg-orange-500/10 rounded-full blur-[60px] pointer-events-none" />
+      <div className="absolute -top-20 -right-20 w-[420px] h-[420px] bg-red-400/20 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute -bottom-20 -left-20 w-[380px] h-[380px] bg-orange-700/20 rounded-full blur-[90px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[180px] bg-red-600/10 rounded-full blur-[60px] pointer-events-none" />
 
       {/* Floating food emoji decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none select-none" aria-hidden="true">
@@ -103,13 +103,13 @@ export default function DishSearch({ setQueryRef } = {}) {
           </div>
 
           {/* Heading */}
-          <h1 className="text-white font-extrabold leading-[1.1] mb-3 drop-shadow-lg">
-            <span className="block text-4xl sm:text-5xl lg:text-6xl">What&apos;s on your</span>
-            <span className="block text-4xl sm:text-5xl lg:text-6xl text-orange-300 mt-1">mind today?</span>
+          <h1 className="text-white font-extrabold leading-[1.1] mb-4 drop-shadow-lg">
+            <span className="block text-4xl sm:text-5xl lg:text-6xl">What are you</span>
+            <span className="block text-4xl sm:text-5xl lg:text-6xl text-orange-300 mt-1">craving?</span>
           </h1>
 
-          <p className="text-orange-200/75 text-sm sm:text-base mb-8 max-w-sm mx-auto leading-relaxed">
-            Search dishes, discover nearby restaurants, and find what&apos;s trending.
+          <p className="text-red-200/80 text-sm sm:text-base mb-8 max-w-md mx-auto leading-relaxed">
+            Search dishes across nearby restaurants and discover what&apos;s trending today.
           </p>
 
           {/* ── Search box ── */}

@@ -36,12 +36,12 @@ export default function Header() {
           </Link>
           <Link
             href="/login"
-            className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors shadow-sm shadow-orange-200"
+            className="flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 active:from-red-800 active:to-orange-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition-all shadow-sm shadow-red-200"
           >
             <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
             </svg>
-            Admin
+            Restaurant Login
           </Link>
         </div>
 
@@ -89,9 +89,9 @@ export default function Header() {
               <Link
                 href="/login"
                 onClick={() => setDrawerOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl bg-orange-500 text-white font-bold hover:bg-orange-600 transition-colors"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white font-bold hover:from-red-700 hover:to-orange-600 transition-all"
               >
-                <span>👤</span> Admin Login
+                <span>👤</span> Restaurant Login
               </Link>
             </nav>
           </div>

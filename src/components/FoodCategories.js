@@ -29,10 +29,10 @@ export default function FoodCategories({ onSelect }) {
   }
 
   return (
-    <section className="bg-white border-b border-gray-100 py-5">
+    <section className="bg-white border-b border-gray-100 py-4 sm:py-5">
       {/* Section label */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-3">
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Browse by Category</p>
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.12em]">Browse by Category</p>
       </div>
 
       {/* Marquee track */}
@@ -53,8 +53,8 @@ export default function FoodCategories({ onSelect }) {
                   w-[68px] sm:w-20 py-3 rounded-2xl border-2
                   transition-all duration-200 active:scale-90
                   ${isActive
-                    ? "bg-orange-500 border-orange-500 shadow-lg shadow-orange-200/60 scale-105"
-                    : "bg-gray-50 border-transparent hover:bg-orange-50 hover:border-orange-200 hover:scale-105"
+                    ? "bg-gradient-to-br from-red-600 to-orange-500 border-red-500 shadow-lg shadow-red-200/60 scale-105"
+                    : "bg-gray-50 border-transparent hover:bg-red-50 hover:border-red-200 hover:scale-105"
                   }
                 `}
               >

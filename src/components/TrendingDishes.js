@@ -66,6 +66,7 @@ export default function TrendingDishes() {
     <section
       ref={sectionRef}
       className={`py-10 px-4 sm:px-6 lg:px-8 bg-white border-t border-gray-100 section-fade ${inView ? "in-view" : ""}`}
+      style={{ background: "linear-gradient(180deg, #ffffff 0%, #fdf9f7 100%)" }}
     >
       <div className="max-w-7xl mx-auto">
 
@@ -78,8 +79,8 @@ export default function TrendingDishes() {
             <p className="text-gray-400 text-sm mt-1">{subtitle}</p>
           </div>
           {!isFallback && (
-            <div className="flex items-center gap-1.5 text-xs font-bold text-orange-500 bg-orange-50 border border-orange-100 px-3 py-1.5 rounded-full hidden sm:flex">
-              <span className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse" />
+            <div className="flex items-center gap-1.5 text-xs font-bold text-red-600 bg-red-50 border border-red-100 px-3 py-1.5 rounded-full hidden sm:flex">
+              <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
               Live trending
             </div>
           )}
@@ -139,12 +140,12 @@ function DishCard({ dish, rank, isFallback }) {
 
       {/* Info */}
       <div className="px-3 py-2.5 flex flex-col gap-0.5 flex-1">
-        <p className="font-bold text-gray-900 text-sm leading-snug line-clamp-2 group-hover:text-orange-600 transition-colors">
+        <p className="font-bold text-gray-900 text-sm leading-snug line-clamp-2 group-hover:text-red-600 transition-colors">
           {name}
         </p>
         <p className="text-xs text-gray-400 truncate">{restaurantName}</p>
         <div className="mt-auto pt-2 flex items-center justify-between">
-          <span className="text-sm font-extrabold text-orange-600">₹{price}</span>
+          <span className="text-sm font-extrabold text-red-600">₹{price}</span>
           <span className="text-[10px] font-semibold text-gray-400 bg-gray-50 hover:bg-orange-50 hover:text-orange-500 px-2 py-0.5 rounded-lg border border-gray-100 transition-colors">
             View →
           </span>
