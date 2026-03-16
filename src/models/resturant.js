@@ -14,6 +14,25 @@ const RestaurantSchema = new mongoose.Schema({
   },
 
   address: String,
+  city: { type: String, default: null },
+  latitude:  { type: Number, default: null },
+  longitude: { type: Number, default: null },
+
+  // GeoJSON Point — used for MongoDB 2dsphere geospatial queries.
+  // Populated automatically when latitude/longitude are saved via the
+  // pre-save hook below. Do NOT set this field manually.
+  location: {
+    type: {
+      type: String,
+      enum: ["Point"],
+      default: "Point",
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]  ← GeoJSON order
+      default: undefined,
+    },
+  },
+
   logoUrl: String,
 
   // ── Subscription plan (enforced) ──────────────────────────────
@@ -80,6 +99,19 @@ const RestaurantSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 
+
+// ── Geospatial index (sparse so restaurants without coords are unaffected) ──
+RestaurantSchema.index({ location: "2dsphere" }, { sparse: true });
+
+// ── Keep GeoJSON location in sync with flat lat/lng fields ─────────────────
+RestaurantSchema.pre("save", function (next) {
+  if (this.latitude != null && this.longitude != null) {
+    this.location = { type: "Point", coordinates: [this.longitude, this.latitude] };
+  } else {
+    this.location = undefined;
+  }
+  next();
+});
 
 // Add methods
 RestaurantSchema.methods.isSubscriptionActive = function() {

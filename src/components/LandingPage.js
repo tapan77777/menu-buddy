@@ -2,6 +2,9 @@
 import { Check, ChevronRight, Clock, Menu, Settings, Smartphone, Star, TrendingUp, Users, X } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
+import DishSearch from '@/components/DishSearch';
+import NearbyRestaurants from '@/components/NearbyRestaurants';
+import TrendingDishes from '@/components/TrendingDishes';
 
 export default function MenuBuddyLanding() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -71,7 +74,7 @@ export default function MenuBuddyLanding() {
     </button>
   </Link>
 
-  <Link href="/client">
+  <Link href="/">
     <button className="bg-white text-orange-600 border-2 border-orange-600 px-5 py-3 rounded-lg text-base font-semibold hover:bg-orange-50 transition">
       Explore as Diner
     </button>
@@ -82,6 +85,15 @@ export default function MenuBuddyLanding() {
           </div>
         </div>
       </section>
+
+      {/* DISH SEARCH SECTION */}
+      <DishSearch />
+
+      {/* NEARBY RESTAURANTS SECTION */}
+      <NearbyRestaurants />
+
+      {/* TRENDING DISHES SECTION */}
+      <TrendingDishes />
 
       {/* THE PROBLEM SECTION */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white">
