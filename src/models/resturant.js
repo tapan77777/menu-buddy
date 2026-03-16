@@ -1,5 +1,6 @@
 // models/restaurant.js - UPDATE YOUR EXISTING FILE
 import mongoose from "mongoose";
+import { geocodeAddress } from "@/lib/geocode";
 
 const RestaurantSchema = new mongoose.Schema({
   name: String,
@@ -103,14 +104,35 @@ const RestaurantSchema = new mongoose.Schema({
 // ── Geospatial index (sparse so restaurants without coords are unaffected) ──
 RestaurantSchema.index({ location: "2dsphere" }, { sparse: true });
 
-// ── Keep GeoJSON location in sync with flat lat/lng fields ─────────────────
-RestaurantSchema.pre("save", function (next) {
+// ── Auto-geocode + keep GeoJSON location in sync ────────────────────────────
+RestaurantSchema.pre("save", async function () {
+  // Only attempt geocoding when:
+  //   (a) coordinates are still missing, AND
+  //   (b) this is a new document OR the address / name just changed
+  const needsGeocode =
+    (this.latitude == null || this.longitude == null) &&
+    (this.isNew || this.isModified("address") || this.isModified("name") || this.isModified("city"));
+
+  if (needsGeocode) {
+    // Build the richest possible query string from available fields
+    const query = [this.name, this.city, this.address].filter(Boolean).join(", ");
+
+    if (query.trim()) {
+      const coords = await geocodeAddress(query);
+      if (coords) {
+        this.latitude  = coords.lat;
+        this.longitude = coords.lng;
+      }
+    }
+    // If geocoding failed, leave lat/lng as null — save still succeeds
+  }
+
+  // Sync GeoJSON location from flat lat/lng (always runs)
   if (this.latitude != null && this.longitude != null) {
     this.location = { type: "Point", coordinates: [this.longitude, this.latitude] };
   } else {
     this.location = undefined;
   }
-  next();
 });
 
 // Add methods

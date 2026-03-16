@@ -31,7 +31,7 @@ export default function DiscoveryHomePage({ fallbackRestaurants = [] }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8]">
+    <div className="min-h-screen bg-[#f5f5f5]">
       {/* Sticky header */}
       <div className="sticky top-0 z-40">
         <Header />
@@ -42,7 +42,7 @@ export default function DiscoveryHomePage({ fallbackRestaurants = [] }) {
         <DishSearch setQueryRef={setQueryRef} />
       </div>
 
-      {/* 2. Category chips */}
+      {/* 2. Category marquee */}
       <FoodCategories onSelect={handleCategorySelect} />
 
       {/* 3. Nearby cafes — hides when geo unavailable or no results */}
@@ -54,7 +54,20 @@ export default function DiscoveryHomePage({ fallbackRestaurants = [] }) {
       {/* 5. Featured restaurants — always visible */}
       <FeaturedRestaurants restaurants={fallbackRestaurants} />
 
-      <div className="h-8" />
+      {/* Footer */}
+      <footer className="bg-white border-t border-gray-100 py-8 px-4 sm:px-6 mt-2">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-gray-400">
+          <div className="flex items-center gap-2 font-semibold">
+            <span className="text-gray-700 font-extrabold">Menu<span className="text-orange-500">Buddy</span></span>
+            <span>·</span>
+            <span>Discover food near you</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <a href="/owner" className="hover:text-orange-500 transition-colors">List restaurant</a>
+            <a href="/login" className="hover:text-orange-500 transition-colors">Admin login</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
