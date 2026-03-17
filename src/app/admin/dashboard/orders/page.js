@@ -458,11 +458,12 @@ export default function OrdersPage() {
     preparing: { icon: ChefHat, color: "bg-orange-500", textColor: "text-orange-700", bgLight: "bg-orange-50", border: "border-orange-200", label: "Cooking" },
     ready: { icon: PackageCheck, color: "bg-purple-500", textColor: "text-purple-700", bgLight: "bg-purple-50", border: "border-purple-200", label: "Ready" },
     completed: { icon: CheckCircle, color: "bg-green-500", textColor: "text-green-700", bgLight: "bg-green-50", border: "border-green-200", label: "Completed" },
-    rejected: { icon: XCircle, color: "bg-red-500", textColor: "text-red-700", bgLight: "bg-red-50", border: "border-red-200", label: "Rejected" }
+    rejected: { icon: XCircle, color: "bg-red-500", textColor: "text-red-700", bgLight: "bg-red-50", border: "border-red-200", label: "Rejected" },
+    expired: { icon: Clock, color: "bg-gray-400", textColor: "text-gray-500", bgLight: "bg-gray-50", border: "border-gray-200", label: "Expired" },
   };
 
   const activeOrders = orders.filter(o => ['pending', 'accepted', 'preparing', 'ready'].includes(o.status));
-  const historyOrders = orders.filter(o => ['completed', 'rejected'].includes(o.status));
+  const historyOrders = orders.filter(o => ['completed', 'rejected', 'expired'].includes(o.status));
   const pendingOrders = activeOrders.filter(o => o.status === 'pending');
   const processingOrders = activeOrders.filter(o => ['accepted', 'preparing', 'ready'].includes(o.status));
 
