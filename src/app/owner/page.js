@@ -1,483 +1,365 @@
 "use client";
-import {
-  Edit3,
-  Eye,
-  MapPin,
-  Plus,
-  Save,
-  Search,
-  Store,
-  Trash2,
-  TrendingUp,
-  Users,
-  X
-} from 'lucide-react';
-import Image from 'next/image';
-import { useEffect, useState } from 'react';
 
-const OwnerDashboard = () => {
-  const [restaurants, setRestaurants] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({});
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newRestaurant, setNewRestaurant] = useState({
-    name: '',
-    logoUrl: '',
-    address: '',
-    email: '',
-    slug: ''
-  });
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
-  
+// ── Helpers ────────────────────────────────────────────────────────────────────
 
-  useEffect(() => {
-    fetchRestaurants();
-  }, []);
+function fmt(n) {
+  if (n == null) return "—";
+  if (n >= 10_000) return `${(n / 1000).toFixed(1)}k`;
+  return n.toLocaleString("en-IN");
+}
 
-  const fetchRestaurants = async () => {
-    try {
-      const response = await fetch('/api/restaurant');
-      const data = await response.json();
-      setRestaurants(data.map(restaurant => ({
-        id: restaurant._id,
-        name: restaurant.name,
-        logo: restaurant.logoUrl || '🍽️',
-        address: restaurant.address,
-        email: restaurant.email,
-        slug: restaurant.slug,
-        visits: restaurant.visits || 0,
-        dateAdded: restaurant.createdAt
-      })));
-    } catch (error) {
-      console.error('Error fetching restaurants:', error);
-    } finally {
-      setLoading(false);
-    }
+function fmtCurrency(n) {
+  if (n == null) return "—";
+  if (n >= 100_000) return `₹${(n / 100_000).toFixed(1)}L`;
+  if (n >= 1_000)   return `₹${(n / 1000).toFixed(1)}k`;
+  return `₹${n.toLocaleString("en-IN")}`;
+}
+
+const STATUS_COLOR = {
+  completed: "bg-green-100 text-green-700",
+  accepted:  "bg-blue-100 text-blue-700",
+  preparing: "bg-orange-100 text-orange-700",
+  ready:     "bg-purple-100 text-purple-700",
+  pending:   "bg-yellow-100 text-yellow-700",
+  rejected:  "bg-red-100 text-red-700",
+  cancelled: "bg-gray-100 text-gray-600",
+};
+
+// ── Sub-components ─────────────────────────────────────────────────────────────
+
+function StatCard({ icon, label, value, sub, accent = "red" }) {
+  const accents = {
+    red:    "bg-red-50 text-red-600",
+    orange: "bg-orange-50 text-orange-600",
+    blue:   "bg-blue-50 text-blue-600",
+    green:  "bg-green-50 text-green-600",
   };
-
-  const totalVisits = restaurants.reduce((sum, restaurant) => sum + restaurant.visits, 0);
-  const averageVisits = Math.round(totalVisits / restaurants.length) || 0;
-
-  const filteredRestaurants = restaurants.filter(restaurant =>
-    restaurant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    restaurant.address.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const startEdit = (restaurant) => {
-    setEditingId(restaurant.id);
-    setEditForm({
-      name: restaurant.name,
-      logoUrl: restaurant.logo,
-      address: restaurant.address
-    });
-  };
-
-  const saveEdit = async () => {
-    try {
-      await fetch(`/api/restaurant/${editingId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editForm)
-      });
-      fetchRestaurants();
-      setEditingId(null);
-      setEditForm({});
-    } catch (error) {
-      console.error('Error updating restaurant:', error);
-    }
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditForm({});
-  };
-
-  const deleteRestaurant = async (id) => {
-    if (confirm('Are you sure you want to delete this restaurant?')) {
-      try {
-        await fetch(`/api/restaurant/${id}`, { method: 'DELETE' });
-        fetchRestaurants();
-      } catch (error) {
-        console.error('Error deleting restaurant:', error);
-      }
-    }
-  };
-
-  const addRestaurant = async () => {
-    if (!newRestaurant.name || !newRestaurant.address || !newRestaurant.email) {
-      alert('Please fill in all required fields');
-      return;
-    }
-
-    try {
-      await fetch('/api/restaurant', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newRestaurant)
-      });
-      fetchRestaurants();
-      setNewRestaurant({ name: '', logoUrl: '', address: '', email: '', slug: '' });
-      setShowAddForm(false);
-    } catch (error) {
-      console.error('Error adding restaurant:', error);
-    }
-  };
-
-  if (loading) {
-    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-xl">Loading...</div>
-    </div>;
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">MenuBuddy Owner Dashboard</h1>
-              <p className="text-gray-600">Manage your restaurant network and track performance</p>
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-blue-600">{restaurants.length}</div>
-              <div className="text-sm text-gray-500">Total Restaurants</div>
-            </div>
-          </div>
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ${accents[accent]}`}>
+        {icon}
+      </div>
+      <div>
+        <p className="text-2xl font-extrabold text-gray-900 leading-none">{value}</p>
+        <p className="text-sm font-medium text-gray-500 mt-0.5">{label}</p>
+        {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+      </div>
+    </div>
+  );
+}
+
+function SectionCard({ title, icon, children }) {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-50 flex items-center gap-2">
+        <span className="text-lg">{icon}</span>
+        <h3 className="font-bold text-gray-800 text-sm">{title}</h3>
+      </div>
+      <div className="p-5">{children}</div>
+    </div>
+  );
+}
+
+function RankBar({ rank, label, value, maxValue, suffix = "views" }) {
+  const pct = maxValue > 0 ? Math.round((value / maxValue) * 100) : 0;
+  return (
+    <div className="flex items-center gap-3 py-1.5">
+      <span className="text-xs font-bold text-gray-400 w-5 flex-shrink-0">#{rank}</span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-sm font-medium text-gray-800 truncate pr-2">{label}</span>
+          <span className="text-xs text-gray-500 flex-shrink-0">{fmt(value)} {suffix}</span>
         </div>
-
-        {/* Analytics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-sm p-6 border">
-            <div className="flex items-center">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <Store className="h-6 w-6 text-blue-600" />
-              </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-semibold text-gray-900">{restaurants.length}</h3>
-                <p className="text-gray-600 text-sm">Total Restaurants</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm p-6 border">
-            <div className="flex items-center">
-              <div className="p-3 bg-green-100 rounded-lg">
-                <Users className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-semibold text-gray-900">{totalVisits.toLocaleString()}</h3>
-                <p className="text-gray-600 text-sm">Total Visits</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm p-6 border">
-            <div className="flex items-center">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <TrendingUp className="h-6 w-6 text-purple-600" />
-              </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-semibold text-gray-900">{averageVisits}</h3>
-                <p className="text-gray-600 text-sm">Avg Visits/Restaurant</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm p-6 border">
-            <div className="flex items-center">
-              <div className="p-3 bg-orange-100 rounded-lg">
-                <Eye className="h-6 w-6 text-orange-600" />
-              </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {restaurants.length > 0 ? Math.max(...restaurants.map(r => r.visits)) : 0}
-                </h3>
-                <p className="text-gray-600 text-sm">Top Restaurant Visits</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Controls */}
-        <div className="bg-white rounded-lg shadow-sm border mb-6">
-          <div className="p-6">
-            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <input
-                  type="text"
-                  placeholder="Search restaurants..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <button
-                onClick={() => setShowAddForm(true)}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <Plus className="h-4 w-4" />
-                Add Restaurant
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Add Restaurant Form */}
-        {showAddForm && (
-          <div className="bg-white rounded-lg shadow-sm border mb-6">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Add New Restaurant</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Restaurant Name *</label>
-                  <input
-                    type="text"
-                    value={newRestaurant.name}
-                    onChange={(e) => setNewRestaurant({...newRestaurant, name: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter restaurant name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-                  <input
-                    type="email"
-                    value={newRestaurant.email}
-                    onChange={(e) => setNewRestaurant({...newRestaurant, email: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="restaurant@email.com"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Slug *</label>
-                  <input
-                    type="text"
-                    value={newRestaurant.slug}
-                    onChange={(e) => setNewRestaurant({...newRestaurant, slug: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="restaurant-slug"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Logo URL</label>
-                  <input
-                    type="text"
-                    value={newRestaurant.logoUrl}
-                    onChange={(e) => setNewRestaurant({...newRestaurant, logoUrl: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="https://logo-url.com"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Address *</label>
-                  <input
-                    type="text"
-                    value={newRestaurant.address}
-                    onChange={(e) => setNewRestaurant({...newRestaurant, address: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter full address"
-                  />
-                </div>
-              </div>
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={addRestaurant}
-                  className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  <Save className="h-4 w-4" />
-                  Add Restaurant
-                </button>
-                <button
-                  onClick={() => {
-                    setShowAddForm(false);
-                    setNewRestaurant({ name: '', logoUrl: '', address: '', email: '', slug: '' });
-                  }}
-                  className="flex items-center gap-2 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Restaurant List */}
-        <div className="bg-white rounded-lg shadow-sm border">
-          <div className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Restaurant Management</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-4">Restaurant</th>
-                    <th className="text-left py-3 px-4">Address</th>
-                    <th className="text-left py-3 px-4">Visits</th>
-                    <th className="text-left py-3 px-4">Date Added</th>
-                    <th className="text-left py-3 px-4">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredRestaurants.map((restaurant) => (
-                    <tr key={restaurant.id} className="border-b hover:bg-gray-50">
-                      <td className="py-4 px-4">
-                        {editingId === restaurant.id ? (
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="text"
-                              value={editForm.logoUrl}
-                              onChange={(e) => setEditForm({...editForm, logoUrl: e.target.value})}
-                              className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
-                              placeholder="Logo URL"
-                            />
-                            <input
-                              type="text"
-                              value={editForm.name}
-                              onChange={(e) => setEditForm({...editForm, name: e.target.value})}
-                              className="flex-1 px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                              {restaurant.logo.startsWith('http') ? 
-                                <Image
-  src={restaurant.logo}
-  alt="Logo"
-  width={32}          // w-8 = 32px
-  height={32}         // h-8 = 32px
-  className="rounded"
-/> :
-                                <span className="text-lg">{restaurant.logo}</span>
-                              }
-                            </div>
-                            <div>
-                              <div className="font-semibold">{restaurant.name}</div>
-                              <div className="text-xs text-gray-500">{restaurant.email}</div>
-                            </div>
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-4 px-4">
-                        {editingId === restaurant.id ? (
-                          <input
-                            type="text"
-                            value={editForm.address}
-                            onChange={(e) => setEditForm({...editForm, address: e.target.value})}
-                            className="w-full px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          />
-                        ) : (
-                          <div className="flex items-center gap-2 text-gray-600">
-                            <MapPin className="h-4 w-4" />
-                            {restaurant.address}
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-4 px-4">
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4 text-blue-500" />
-                          <span className="font-semibold">{restaurant.visits}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-4 text-gray-600">
-                        {new Date(restaurant.dateAdded).toLocaleDateString()}
-                      </td>
-                      <td className="py-4 px-4">
-                        {editingId === restaurant.id ? (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={saveEdit}
-                              className="flex items-center gap-1 bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition-colors text-sm"
-                            >
-                              <Save className="h-3 w-3" />
-                              Save
-                            </button>
-                            <button
-                              onClick={cancelEdit}
-                              className="flex items-center gap-1 bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 transition-colors text-sm"
-                            >
-                              <X className="h-3 w-3" />
-                              Cancel
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => startEdit(restaurant)}
-                              className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors text-sm"
-                            >
-                              <Edit3 className="h-3 w-3" />
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => deleteRestaurant(restaurant.id)}
-                              className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition-colors text-sm"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                              Delete
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {filteredRestaurants.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                {searchTerm ? 'No restaurants found matching your search.' : 'No restaurants added yet.'}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Performance Insights */}
-        <div className="mt-8 bg-white rounded-lg shadow-sm border">
-          <div className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Performance Insights</h3>
-            <div className="space-y-4">
-              {restaurants
-                .sort((a, b) => b.visits - a.visits)
-                .slice(0, 5)
-                .map((restaurant, index) => (
-                <div key={restaurant.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="text-lg font-bold text-gray-400">#{index + 1}</div>
-                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
-                      {restaurant.logo.startsWith('http') ? 
-                        <Image
-  src={restaurant.logo || "/default-logo.png"} // fallback if no logo
-  alt="Logo"
-  width={32}   // same as w-8
-  height={32}  // same as h-8
-  className="rounded"
-/> :
-                        <span className="text-lg">{restaurant.logo}</span>
-                      }
-                    </div>
-                    <div>
-                      <div className="font-semibold">{restaurant.name}</div>
-                      <div className="text-sm text-gray-600">{restaurant.address}</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold text-lg">{restaurant.visits}</div>
-                    <div className="text-sm text-gray-600">visits</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-red-500 to-orange-400 rounded-full transition-all duration-500"
+            style={{ width: `${pct}%` }}
+          />
         </div>
       </div>
     </div>
   );
-};
+}
 
-export default OwnerDashboard;
+function Pill({ label, count }) {
+  return (
+    <div className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-xl hover:bg-red-50 transition-colors group">
+      <span className="text-sm text-gray-700 group-hover:text-red-700 font-medium truncate pr-2">{label}</span>
+      <span className="text-xs font-bold text-gray-400 group-hover:text-red-500 flex-shrink-0">{fmt(count)}</span>
+    </div>
+  );
+}
+
+function SkeletonCard() {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 p-5 animate-pulse">
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 bg-gray-100 rounded-xl" />
+        <div className="space-y-2">
+          <div className="h-6 bg-gray-100 rounded w-20" />
+          <div className="h-3 bg-gray-100 rounded w-28" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main Page ──────────────────────────────────────────────────────────────────
+
+export default function OwnerDashboardPage() {
+  const router  = useRouter();
+  const [stats,   setStats]   = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState("");
+
+  useEffect(() => {
+    fetch("/api/owner/stats")
+      .then(async (res) => {
+        if (res.status === 401 || res.status === 403) {
+          router.replace("/");
+          return;
+        }
+        const data = await res.json();
+        if (data.success) setStats(data.stats);
+        else setError(data.error || "Failed to load stats");
+      })
+      .catch(() => setError("Network error"))
+      .finally(() => setLoading(false));
+  }, [router]);
+
+  // ── Loading skeleton ──────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f7f6f4] p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="h-8 bg-gray-200 rounded w-60 mb-8 animate-pulse" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-gray-100 h-64 animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#f7f6f4] flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <p className="text-4xl">⚠️</p>
+          <p className="text-gray-700 font-medium">{error}</p>
+          <Link href="/" className="text-red-600 text-sm hover:underline">← Back to home</Link>
+        </div>
+      </div>
+    );
+  }
+
+  const {
+    totalRestaurants, totalMenuItems, totalOrders, totalRevenue,
+    restaurantsByCity, topRestaurants, topItems, topSearches, ordersByStatus,
+  } = stats;
+
+  const maxViews        = topRestaurants[0]?.totalViews  ?? 1;
+  const maxItemClicks   = topItems[0]?.clicks             ?? 1;
+  const maxSearchCount  = topSearches[0]?.count           ?? 1;
+  const maxCityCount    = restaurantsByCity[0]?.count      ?? 1;
+
+  const completedOrders = ordersByStatus.find((s) => s.status === "completed")?.count ?? 0;
+
+  return (
+    <div className="min-h-screen bg-[#f7f6f4]">
+
+      {/* ── Header ──────────────────────────────────────────────── */}
+      <header className="bg-white border-b border-gray-100 sticky top-0 z-30 shadow-sm">
+        <div className="max-w-7xl mx-auto px-5 py-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link href="/" className="text-xl font-extrabold">
+              Menu<span className="text-red-600">Buddy</span>
+            </Link>
+            <span className="hidden sm:inline text-gray-300">|</span>
+            <span className="hidden sm:inline text-sm font-semibold text-gray-500">Owner Insights</span>
+          </div>
+          <Link
+            href="/"
+            className="text-sm text-gray-500 hover:text-red-600 transition-colors font-medium"
+          >
+            ← Back to site
+          </Link>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+
+        {/* ── A. Overview ─────────────────────────────────────────── */}
+        <section>
+          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Overview</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard icon="🍴" label="Restaurants"  value={fmt(totalRestaurants)} accent="red" />
+            <StatCard icon="📋" label="Menu Items"    value={fmt(totalMenuItems)}   accent="orange" />
+            <StatCard icon="🧾" label="Total Orders"  value={fmt(totalOrders)}
+              sub={`${fmt(completedOrders)} completed`} accent="blue" />
+            <StatCard icon="💰" label="Revenue"       value={fmtCurrency(totalRevenue)}
+              sub="Completed orders" accent="green" />
+          </div>
+        </section>
+
+        {/* ── B + C. Restaurant & Menu Insights ───────────────────── */}
+        <section>
+          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Insights</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            {/* Top restaurants by views */}
+            <SectionCard title="Top Restaurants by Views" icon="📍">
+              {topRestaurants.length === 0 ? (
+                <p className="text-sm text-gray-400">No view data yet. Data populates as customers browse menus.</p>
+              ) : (
+                <div className="space-y-1">
+                  {topRestaurants.map((r, i) => (
+                    <div key={r.slug} className="flex items-center gap-3 py-2 group">
+                      <span className="text-xs font-bold text-gray-400 w-5 flex-shrink-0">#{i + 1}</span>
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-red-100 to-orange-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {r.logoUrl ? (
+                          <Image src={r.logoUrl} alt={r.name} width={32} height={32} className="object-cover w-full h-full" />
+                        ) : (
+                          <span className="text-sm font-bold text-red-600">
+                            {r.name?.charAt(0)?.toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <Link href={`/restaurant/${r.slug}`}
+                            className="text-sm font-semibold text-gray-800 truncate pr-2 group-hover:text-red-600 transition-colors">
+                            {r.name}
+                          </Link>
+                          <span className="text-xs text-gray-500 flex-shrink-0">{fmt(r.totalViews)} views</span>
+                        </div>
+                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-red-500 to-orange-400 rounded-full"
+                            style={{ width: `${Math.round((r.totalViews / maxViews) * 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </SectionCard>
+
+            {/* Most clicked dishes */}
+            <SectionCard title="Most Clicked Dishes" icon="🍽️">
+              {topItems.length === 0 ? (
+                <p className="text-sm text-gray-400">No item click data yet.</p>
+              ) : (
+                <div className="space-y-1">
+                  {topItems.map((item, i) => (
+                    <RankBar
+                      key={item.name}
+                      rank={i + 1}
+                      label={item.name}
+                      value={item.clicks}
+                      maxValue={maxItemClicks}
+                      suffix="clicks"
+                    />
+                  ))}
+                </div>
+              )}
+            </SectionCard>
+
+          </div>
+        </section>
+
+        {/* ── D + E. Search & Location Insights ───────────────────── */}
+        <section>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            {/* Search insights */}
+            <SectionCard title="Top Search Keywords" icon="🔍">
+              {topSearches.length === 0 ? (
+                <p className="text-sm text-gray-400">No searches recorded yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {topSearches.map((s, i) => (
+                    <div key={s.keyword} className="flex items-center gap-3">
+                      <span className="text-xs font-bold text-gray-300 w-5 flex-shrink-0">#{i + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-medium text-gray-700 truncate pr-2">{s.keyword}</span>
+                          <span className="text-xs text-gray-500 flex-shrink-0">{fmt(s.count)}×</span>
+                        </div>
+                        <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full"
+                            style={{ width: `${Math.round((s.count / maxSearchCount) * 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </SectionCard>
+
+            {/* Location insights */}
+            <SectionCard title="Restaurants by City" icon="🗺️">
+              {restaurantsByCity.length === 0 ? (
+                <p className="text-sm text-gray-400">No city data found. Add city to restaurant profiles.</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  {restaurantsByCity.map((c) => (
+                    <div key={c.city}
+                      className="flex items-center justify-between bg-gray-50 hover:bg-orange-50 rounded-xl px-3 py-2 transition-colors group">
+                      <span className="text-sm text-gray-700 group-hover:text-orange-700 font-medium truncate pr-2">
+                        {c.city}
+                      </span>
+                      <span className="text-xs font-bold text-gray-400 group-hover:text-orange-500 flex-shrink-0 bg-white px-1.5 py-0.5 rounded-lg">
+                        {c.count}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </SectionCard>
+
+          </div>
+        </section>
+
+        {/* ── Orders by status ────────────────────────────────────── */}
+        {ordersByStatus.length > 0 && (
+          <section>
+            <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Order Breakdown</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+              {ordersByStatus
+                .sort((a, b) => b.count - a.count)
+                .map((s) => (
+                  <div key={s.status}
+                    className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
+                    <p className="text-2xl font-extrabold text-gray-900">{fmt(s.count)}</p>
+                    <span className={`inline-block mt-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold capitalize ${STATUS_COLOR[s.status] ?? "bg-gray-100 text-gray-600"}`}>
+                      {s.status}
+                    </span>
+                  </div>
+                ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── Footer ──────────────────────────────────────────────── */}
+        <footer className="text-center text-xs text-gray-400 pt-4 pb-8">
+          MenuBuddy Owner Insights · Data refreshes on page load
+        </footer>
+
+      </main>
+    </div>
+  );
+}

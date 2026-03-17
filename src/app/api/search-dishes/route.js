@@ -1,5 +1,6 @@
 import { connectToDB } from "@/lib/db";
 import MenuItem from "@/models/menuItem";
+import SearchEvent from "@/models/SearchEvent";
 import { NextResponse } from "next/server";
 
 const MAX_RESULTS = 10;
@@ -52,6 +53,15 @@ export async function GET(req) {
         },
       },
     ]);
+
+    // Track search keyword (fire-and-forget, min 3 chars to avoid noise)
+    if (raw.length >= 3) {
+      SearchEvent.updateOne(
+        { keyword: raw.toLowerCase() },
+        { $inc: { count: 1 }, $set: { lastSearched: new Date() } },
+        { upsert: true }
+      ).catch(() => {});
+    }
 
     return NextResponse.json({ success: true, dishes });
 
