@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  Bell, BellOff, CheckCircle, ChefHat, Clock, History,
+  Ban, Bell, BellOff, CheckCircle, ChefHat, Clock, History,
   Minus, PackageCheck, Plus, RefreshCw, ShoppingCart,
   Smartphone, X, XCircle
 } from "lucide-react";
@@ -334,6 +334,45 @@ function ManualOrderModal({ restaurantId, onClose, onOrderCreated }) {
   );
 }
 
+// ─── Cancel Confirm Dialog ────────────────────────────────────────────────────
+
+function CancelConfirmDialog({ onConfirm, onClose, cancelling }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+      <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full">
+        <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Ban className="w-6 h-6 text-red-600" />
+        </div>
+        <h3 className="text-lg font-bold text-gray-800 text-center mb-1">Cancel this order?</h3>
+        <p className="text-sm text-gray-500 text-center mb-6">
+          The order will be marked as cancelled. This cannot be undone.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            disabled={cancelling}
+            className="flex-1 border-2 border-gray-200 hover:border-gray-300 text-gray-700 font-bold py-2.5 rounded-xl transition-colors disabled:opacity-50"
+          >
+            Keep order
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={cancelling}
+            className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-2.5 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {cancelling ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Cancelling…
+              </>
+            ) : "Yes, cancel"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Source Badge ──────────────────────────────────────────────────────────────
 
 function SourceBadge({ source }) {
@@ -363,6 +402,9 @@ export default function OrdersPage() {
   const [showHistory, setShowHistory] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [showManualModal, setShowManualModal] = useState(false);
+  const [cancelConfirmId, setCancelConfirmId] = useState(null); // _id of order awaiting cancel confirm
+  const [cancelling, setCancelling] = useState(false);
+  const [autoCancelledCount, setAutoCancelledCount] = useState(0);
   const audioRef = useRef(null);
   const prevOrderCountRef = useRef(0);
   const sseRef = useRef(null);
@@ -443,6 +485,21 @@ export default function OrdersPage() {
     return () => { if (sseRef.current) sseRef.current.close(); };
   }, [restaurantId]);
 
+  // Auto-cancel stale pending orders (>2h) on page load
+  useEffect(() => {
+    if (!restaurantId) return;
+    fetch("/api/admin/orders/auto-cancel", { method: "POST" })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.cancelled > 0) {
+          setAutoCancelledCount(data.cancelled);
+          fetchOrders(); // refresh list to reflect auto-cancellations
+        }
+      })
+      .catch(() => {}); // fire-and-forget, non-fatal
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restaurantId]);
+
   async function updateStatus(orderId, status) {
     await fetch("/api/order/update", {
       method: "POST",
@@ -452,6 +509,23 @@ export default function OrdersPage() {
     fetchOrders();
   }
 
+  async function handleCancel(orderId) {
+    setCancelling(true);
+    try {
+      await fetch(`/api/admin/orders/${orderId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "cancel" }),
+      });
+      setCancelConfirmId(null);
+      fetchOrders();
+    } catch {
+      // next fetchOrders will self-correct
+    } finally {
+      setCancelling(false);
+    }
+  }
+
   const statusConfig = {
     pending: { icon: Clock, color: "bg-yellow-500", textColor: "text-yellow-700", bgLight: "bg-yellow-50", border: "border-yellow-200", label: "New Order" },
     accepted: { icon: CheckCircle, color: "bg-blue-500", textColor: "text-blue-700", bgLight: "bg-blue-50", border: "border-blue-200", label: "Accepted" },
@@ -459,11 +533,12 @@ export default function OrdersPage() {
     ready: { icon: PackageCheck, color: "bg-purple-500", textColor: "text-purple-700", bgLight: "bg-purple-50", border: "border-purple-200", label: "Ready" },
     completed: { icon: CheckCircle, color: "bg-green-500", textColor: "text-green-700", bgLight: "bg-green-50", border: "border-green-200", label: "Completed" },
     rejected: { icon: XCircle, color: "bg-red-500", textColor: "text-red-700", bgLight: "bg-red-50", border: "border-red-200", label: "Rejected" },
-    expired: { icon: Clock, color: "bg-gray-400", textColor: "text-gray-500", bgLight: "bg-gray-50", border: "border-gray-200", label: "Expired" },
+    expired:   { icon: Clock,    color: "bg-gray-400",  textColor: "text-gray-500",  bgLight: "bg-gray-50",  border: "border-gray-200",  label: "Expired"   },
+    cancelled: { icon: Ban,      color: "bg-gray-500",  textColor: "text-gray-600",  bgLight: "bg-gray-50",  border: "border-gray-300",  label: "Cancelled" },
   };
 
   const activeOrders = orders.filter(o => ['pending', 'accepted', 'preparing', 'ready'].includes(o.status));
-  const historyOrders = orders.filter(o => ['completed', 'rejected', 'expired'].includes(o.status));
+  const historyOrders = orders.filter(o => ['completed', 'rejected', 'expired', 'cancelled'].includes(o.status));
   const pendingOrders = activeOrders.filter(o => o.status === 'pending');
   const processingOrders = activeOrders.filter(o => ['accepted', 'preparing', 'ready'].includes(o.status));
 
@@ -576,6 +651,17 @@ export default function OrdersPage() {
               </button>
             )}
           </div>
+
+          {/* Cancel — only for pending orders */}
+          {order.status === "pending" && (
+            <button
+              onClick={() => setCancelConfirmId(order._id)}
+              className="mt-2 w-full border border-gray-300 hover:border-red-300 hover:bg-red-50 text-gray-500 hover:text-red-600 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center gap-1.5"
+            >
+              <Ban className="w-3.5 h-3.5" />
+              Cancel order
+            </button>
+          )}
         </div>
       </div>
     );
@@ -601,6 +687,15 @@ export default function OrdersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Cancel Confirmation Dialog */}
+      {cancelConfirmId && (
+        <CancelConfirmDialog
+          cancelling={cancelling}
+          onConfirm={() => handleCancel(cancelConfirmId)}
+          onClose={() => setCancelConfirmId(null)}
+        />
+      )}
+
       {/* Manual Order Modal */}
       {showManualModal && restaurantId && (
         <ManualOrderModal
@@ -608,6 +703,17 @@ export default function OrdersPage() {
           onClose={() => setShowManualModal(false)}
           onOrderCreated={fetchOrders}
         />
+      )}
+
+      {/* Auto-cancel notification banner */}
+      {autoCancelledCount > 0 && (
+        <div className="fixed bottom-4 right-4 z-40 bg-gray-800 text-white text-sm font-semibold px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 max-w-xs">
+          <Ban className="w-4 h-4 text-gray-400 shrink-0" />
+          <span>{autoCancelledCount} stale order{autoCancelledCount > 1 ? "s" : ""} auto-cancelled (no response &gt;2h)</span>
+          <button onClick={() => setAutoCancelledCount(0)} className="ml-2 text-gray-400 hover:text-white shrink-0">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       )}
 
       {/* Sticky Header */}
@@ -629,7 +735,7 @@ export default function OrdersPage() {
                   )}
                 </h1>
                 <p className="text-xs sm:text-sm text-gray-500 flex items-center gap-2">
-                  {activeOrders.length} active • {historyOrders.length} completed
+                  {activeOrders.length} active • {historyOrders.length} in history
                   {!isConnected && (
                     <span className="text-orange-500 flex items-center gap-1">
                       <RefreshCw className="w-3 h-3 animate-spin" />
