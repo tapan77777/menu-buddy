@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -212,13 +212,15 @@ export default function OwnerDashboardPage() {
   const [stats,        setStats]        = useState(null);
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState("");
-  const [selectedId,   setSelectedId]   = useState(null);   // null = All
+  const [filterError,  setFilterError]  = useState("");   // non-fatal re-fetch error
+  const [selectedId,   setSelectedId]   = useState(null); // null = All
   const [range,        setRange]        = useState("all");
-  const [filtering,    setFiltering]    = useState(false);  // subtle reload indicator
+  const [filtering,    setFiltering]    = useState(false);
 
   // Initial load + re-fetch when filters change
   const fetchStats = useCallback(async (restaurantId, dateRange, isInitial = false) => {
     if (isInitial) setLoading(true); else setFiltering(true);
+    setFilterError("");
     try {
       const params = new URLSearchParams();
       if (restaurantId) params.set("restaurantId", restaurantId);
@@ -226,10 +228,16 @@ export default function OwnerDashboardPage() {
       const res = await fetch(`/api/owner/stats?${params.toString()}`);
       if (res.status === 401 || res.status === 403) { router.replace("/"); return; }
       const data = await res.json();
-      if (data.success) setStats(data.stats);
-      else setError(data.error || "Failed to load stats");
+      if (data.success) {
+        setStats(data.stats);
+      } else {
+        // On initial load, show full error screen; on re-fetch, keep existing data
+        if (isInitial) setError(data.error || "Failed to load stats");
+        else setFilterError(data.error || "Failed to refresh stats");
+      }
     } catch {
-      setError("Network error");
+      if (isInitial) setError("Network error");
+      else setFilterError("Network error — showing previous data");
     } finally {
       if (isInitial) setLoading(false); else setFiltering(false);
     }
@@ -279,13 +287,23 @@ export default function OwnerDashboardPage() {
   }
 
   const {
-    restaurants,
-    totalRestaurants, totalMenuItems, totalOrders, totalRevenue,
-    completedOrders,  todayOrders,    todayRevenue,
-    ordersPctChange,  revenuePctChange,
-    restaurantsByCity, topRestaurants, topItems, topSearches, ordersByStatus,
-    ordersTimeline,
-  } = stats;
+    restaurants      = [],
+    totalRestaurants = 0,
+    totalMenuItems   = 0,
+    totalOrders      = 0,
+    totalRevenue     = 0,
+    completedOrders  = 0,
+    todayOrders      = 0,
+    todayRevenue     = 0,
+    ordersPctChange  = null,
+    revenuePctChange = null,
+    restaurantsByCity = [],
+    topRestaurants    = [],
+    topItems          = [],
+    topSearches       = [],
+    ordersByStatus    = [],
+    ordersTimeline    = [],
+  } = stats ?? {};
 
   const maxViews       = topRestaurants[0]?.totalViews ?? 1;
   const maxItemClicks  = topItems[0]?.clicks           ?? 1;
@@ -336,6 +354,15 @@ export default function OwnerDashboardPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-8">
+
+        {/* ── Non-fatal filter error banner ────────────────────────────── */}
+        {filterError && (
+          <div className="flex items-center gap-3 bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm px-4 py-3 rounded-xl">
+            <span>⚠️</span>
+            <span>{filterError}</span>
+            <button onClick={() => setFilterError("")} className="ml-auto text-yellow-500 hover:text-yellow-700 font-bold">✕</button>
+          </div>
+        )}
 
         {/* ── Filters bar ─────────────────────────────────────────────── */}
         <div className="flex flex-wrap items-center justify-between gap-3">

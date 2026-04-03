@@ -148,7 +148,7 @@ export async function GET(req) {
 
       // Restaurants by city — global
       Restaurant.aggregate([
-        { $match: { city: { $exists: true, $ne: null, $ne: "" } } },
+        { $match: { city: { $exists: true, $nin: [null, ""] } } },
         { $group: { _id: { $toLower: { $trim: { input: "$city" } } }, count: { $sum: 1 }, displayCity: { $first: "$city" } } },
         { $sort: { count: -1 } },
         { $limit: 12 },
